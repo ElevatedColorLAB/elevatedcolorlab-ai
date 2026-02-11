@@ -1,0 +1,179 @@
+/* ============ ElevatedColorLab App Utilities (DTF-derived) ============ */
+
+/* Side panels that scroll */
+.ecl-panel {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.ecl-panel--header {
+  flex-shrink: 0;
+}
+
+.ecl-panel--body {
+  flex: 1;
+}
+
+/* Tool buttons (left-side tool grids) */
+.ecl-btn-tool {
+  background-color: #334155;
+  color: #cbd5e1;
+  border: 1px solid #475569;
+  font-size: 0.75rem;
+  padding: 0.6rem;
+  width: 100%;
+  justify-content: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+  border-radius: 0.5rem;
+}
+
+.ecl-btn-tool:hover {
+  background-color: #475569;
+  color: #ffffff;
+  border-color: #64748b;
+  transform: translateX(2px);
+}
+
+/* Mode tabs (top nav within an app) */
+.ecl-mode-tabs {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.ecl-mode-tab {
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #9ca3af;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.ecl-mode-tab--active {
+  border-color: #6366f1;
+  color: #e5e7eb;
+  opacity: 1;
+}
+
+/* Canvas wrapper for editor / gang sheet */
+.ecl-pan-layer {
+  position: relative;
+  will-change: transform;
+  transition: transform 0.1s ease-out;
+}
+
+/* High-quality image rendering */
+.ecl-hq-image {
+  image-rendering: auto;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* DTF gang sheet item */
+.ecl-sheet-item {
+  position: absolute;
+  cursor: grab;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-sizing: border-box;
+  background-color: transparent;
+  z-index: 1;
+  transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.ecl-sheet-item:hover {
+  box-shadow: 0 0 0 1px #38bdf8;
+  z-index: 100;
+}
+
+.ecl-sheet-item:active {
+  cursor: grabbing;
+  box-shadow: 0 0 0 2px #4f46e5;
+}
+
+/* Overlap indicator */
+.ecl-sheet-item--overlap {
+  box-shadow: 0 0 0 2px #ef4444 !important;
+  animation: eclPulseRed 0.5s ease-in-out;
+}
+
+@keyframes eclPulseRed {
+  0%, 100% { box-shadow: 0 0 0 2px #ef4444; }
+  50% { box-shadow: 0 0 0 4px #ef4444; }
+}
+
+/* Ultra-tight packing mode */
+.ecl-tight-packing .ecl-sheet-item {
+  border: none;
+  margin: 0 !important;
+}
+
+/* Loading shimmer for items */
+.ecl-sheet-item--loading {
+  background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
+  background-size: 200% 100%;
+  animation: eclLoadingShimmer 1.5s infinite;
+}
+
+@keyframes eclLoadingShimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+/* Packing grid overlay (optional debug) */
+.ecl-packing-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Roll edge spacing visualization */
+.ecl-edge-spacing {
+  position: absolute;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px dashed rgba(239, 68, 68, 0.35);
+  z-index: 0;
+}
+
+/* Insight / advisor panel */
+.ecl-insight-panel {
+  background-color: rgba(15, 23, 42, 0.95);
+  border-radius: var(--ecl-radius-md);
+  border: 1px solid #1f2937;
+  padding: 0.75rem;
+}
+
+.ecl-insight-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.ecl-insight-body {
+  font-size: 0.7rem;
+  color: #e5e7eb;
+}
+
+/* Recommended action chip in advisor */
+.ecl-rec-chip {
+  margin-left: auto;
+  background: #4f46e5;
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.6rem;
+  cursor: pointer;
+}

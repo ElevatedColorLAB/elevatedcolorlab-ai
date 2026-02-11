@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings | ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #f9fafb;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+        }
+        .form-input {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            color: white;
+        }
+         .btn { 
+            display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; 
+        }
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #374151; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        #logo-preview {
+            width: 100px;
+            height: 100px;
+            background-color: #374151;
+            border-radius: 0.5rem;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-[#1f2937] p-6 flex-shrink-0 flex flex-col">
+            <div class="flex items-center space-x-3 mb-10">
+                 <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"><i class="fas fa-layer-group text-white"></i></div>
+                <span class="text-xl font-bold tracking-tight text-white">Elevated<span class="text-blue-500">ColorLab</span></span>
+            </div>
+            <nav class="space-y-2 flex-grow">
+                <a href="dashboard.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-tachometer-alt fa-fw"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="account.html" class="flex items-center space-x-3 text-white bg-blue-600/20 border-l-2 border-blue-500 py-2 px-4 rounded-r-md">
+                     <i class="fas fa-user-circle fa-fw text-blue-400"></i>
+                    <span class="font-semibold">My Account</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 lg:p-12">
+            <h1 class="text-4xl font-bold text-white mb-2">Account Settings</h1>
+            <p class="text-gray-400 mb-8">Manage your company information and password.</p>
+            
+            <div class="card p-8 max-w-4xl mx-auto">
+                <form id="account-form">
+                    <div class="space-y-8">
+                        <!-- Company Info -->
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4 text-gray-200">Company Info</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                                <div class="md:col-span-2">
+                                    <label for="company_name" class="block text-sm font-medium mb-1">Company Name</label>
+                                    <input type="text" id="company_name" name="company_name" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Company Logo</label>
+                                    <div class="flex items-center space-x-4">
+                                        <img id="logo-preview" src="https://placehold.co/100x100/374151/9ca3af?text=Logo" alt="Logo preview">
+                                        <input type="file" id="company_logo" name="company_logo" class="hidden">
+                                        <button type="button" onclick="document.getElementById('company_logo').click()" class="btn btn-secondary">Choose File</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact & Address -->
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4 text-gray-200">Contact & Address</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label for="email" class="block text-sm font-medium mb-1">Contact Email</label><input type="email" id="email" name="email" class="form-input"></div>
+                                <div><label for="phone" class="block text-sm font-medium mb-1">Phone Number</label><input type="tel" id="phone" name="phone" class="form-input"></div>
+                                <div class="md:col-span-2"><label for="address_street" class="block text-sm font-medium mb-1">Street Address</label><input type="text" id="address_street" name="address_street" class="form-input"></div>
+                                <div><label for="address_city" class="block text-sm font-medium mb-1">City</label><input type="text" id="address_city" name="address_city" class="form-input"></div>
+                                <div><label for="address_state" class="block text-sm font-medium mb-1">State / Province</label><input type="text" id="address_state" name="address_state" class="form-input"></div>
+                                <div><label for="address_postal_code" class="block text-sm font-medium mb-1">Postal / Zip Code</label><input type="text" id="address_postal_code" name="address_postal_code" class="form-input"></div>
+                                <div><label for="address_country" class="block text-sm font-medium mb-1">Country</label><input type="text" id="address_country" name="address_country" class="form-input"></div>
+                            </div>
+                        </div>
+
+                        <!-- Change Password -->
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4 text-gray-200">Change Password</h2>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label for="new_password" class="block text-sm font-medium mb-1">New Password</label><input type="password" id="new_password" name="new_password" class="form-input" placeholder="Leave blank to keep current"></div>
+                                 <div><label for="confirm_password" class="block text-sm font-medium mb-1">Confirm Password</label><input type="password" id="confirm_password" name="confirm_password" class="form-input"></div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-5 border-t border-gray-700">
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+                <div id="error-message" class="mt-4 text-red-500 text-sm"></div>
+                 <div id="success-message" class="mt-4 text-green-400 text-sm"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = sessionStorage.getItem('main_user_token');
+            const username = sessionStorage.getItem('main_user_username');
+            const errorMessageEl = document.getElementById('error-message');
+            const successMessageEl = document.getElementById('success-message');
+            const form = document.getElementById('account-form');
+            const logoPreview = document.getElementById('logo-preview');
+            const logoInput = document.getElementById('company_logo');
+
+            if (!token || !username) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // --- Fetch and Populate Account Details ---
+            try {
+                // **THE FIX IS HERE**: The request is now a POST and sends the token in the body.
+                const response = await fetch('account_api.php?action=get_details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || 'Failed to fetch details.');
+                }
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const data = result.data;
+                    for (const key in data) {
+                        if (form.elements[key]) {
+                            form.elements[key].value = data[key] || '';
+                        }
+                    }
+                    if (data.company_logo_path) {
+                        logoPreview.src = data.company_logo_path;
+                    }
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                errorMessageEl.textContent = `Error loading details: ${error.message}`;
+            }
+
+            // --- Handle Logo Preview ---
+            logoInput.addEventListener('change', () => {
+                const file = logoInput.files[0];
+                if (file) {
+                    logoPreview.src = URL.createObjectURL(file);
+                }
+            });
+
+            // --- Handle Form Submission ---
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorMessageEl.textContent = '';
+                successMessageEl.textContent = '';
+
+                const formData = new FormData(form);
+                // **THE FIX IS HERE**: The token is added to the form data before sending.
+                formData.append('token', token);
+                
+                if (formData.get('new_password') !== formData.get('confirm_password')) {
+                    errorMessageEl.textContent = 'Passwords do not match.';
+                    return;
+                }
+
+                try {
+                    // No 'headers' needed for FormData, the browser sets it.
+                    const response = await fetch('account_api.php?action=update_details', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.message || 'Failed to save changes.');
+                    }
+                    
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                       successMessageEl.textContent = 'Account details updated successfully!';
+                       if(result.new_logo_path) {
+                           logoPreview.src = result.new_logo_path;
+                       }
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    errorMessageEl.textContent = `Error saving changes: ${error.message}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Approvals | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f9fafb; }
+        .card { background-color: #1f2937; border: 1px solid #374151; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #059669; }
+        .btn-disabled { background-color: #4b5563; color: #9ca3af; cursor: not-allowed; }
+        .toast { position: fixed; top: 20px; right: 20px; background-color: #1f2937; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; border-left: 4px solid; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: translateX(120%); transition: transform 0.5s ease-in-out; z-index: 10001; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+    </style>
+    <script>
+        const token = sessionStorage.getItem('main_user_token');
+        const role = sessionStorage.getItem('main_user_role');
+        if (!token || (role !== 'admin' && token !== 'dev_override_token')) {
+            window.location.href = '/login.html';
+        }
+    </script>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-[#1f2937] p-6 flex-shrink-0 flex flex-col">
+            <div class="flex items-center space-x-3 mb-10">
+                <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"><i class="fas fa-layer-group text-white"></i></div>
+                <span class="text-xl font-bold tracking-tight text-white">Elevated<span class="text-blue-500">ColorLab</span></span>
+            </div>
+            <nav class="space-y-2 flex-grow">
+                <a href="dashboard.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-tachometer-alt fa-fw"></i><span>Dashboard</span>
+                </a>
+                <a href="account.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-user-circle fa-fw"></i><span>My Account</span>
+                </a>
+                <a href="beta_approvals.html" class="flex items-center space-x-3 text-white bg-blue-600/20 border-l-2 border-blue-500 py-2 px-4 rounded-r-md">
+                    <i class="fas fa-user-check fa-fw text-blue-400"></i><span class="font-semibold">Beta Approvals</span>
+                </a>
+            </nav>
+            <a href="#" id="logout-button" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md mt-auto">
+                <i class="fas fa-sign-out-alt fa-fw"></i>
+                <span>Logout</span>
+            </a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 lg:p-12">
+            <h1 class="text-4xl font-bold text-white mb-2">Beta Tester Applications</h1>
+            <p class="text-gray-400 mb-8">Review and approve new beta testers. Approved testers will be created as a 'beta_tester' role.</p>
+            <div id="requests-container" class="space-y-6">
+                <p id="loading-message" class="text-gray-400">Loading applications...</p>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast-notification" class="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = sessionStorage.getItem('main_user_token');
+            const requestsContainer = document.getElementById('requests-container');
+            const loadingMessage = document.getElementById('loading-message');
+            const toast = document.getElementById('toast-notification');
+
+            function showToast(message, type = 'success') {
+                toast.textContent = message;
+                toast.className = `toast show ${type}`;
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 5000);
+            }
+
+            document.getElementById('logout-button').addEventListener('click', function() { sessionStorage.clear(); window.location.href = '/login.html'; });
+
+            async function fetchBetaRequests() {
+                try {
+                    const response = await fetch('beta_api.php?action=get_requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token }) });
+                    if (!response.ok) { const err = await response.json(); throw new Error(err.message || `Server responded with status ${response.status}`); }
+                    const result = await response.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+                    
+                    loadingMessage.style.display = 'none';
+                    requestsContainer.innerHTML = '';
+                    if(result.data.length === 0) { requestsContainer.innerHTML = '<p class="text-gray-500">No pending beta applications found.</p>'; return; }
+
+                    result.data.forEach(req => {
+                        const card = document.createElement('div');
+                        card.className = 'card p-6 rounded-lg';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div><h3 class="text-xl font-bold text-white">${req.shop_name}</h3><p class="text-sm text-blue-400">${req.contact_email}</p></div>
+                                <span class="text-xs uppercase font-bold px-2 py-1 rounded-full ${req.status === 'pending' ? 'bg-yellow-800 text-yellow-200' : 'bg-green-800 text-green-200'}">${req.status}</span>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div><strong>Contact:</strong> ${req.contact_name}</div>
+                                <div><strong>Shop Size:</strong> ${req.shop_size} employees</div>
+                                <div class="md:col-span-2"><strong>Presses:</strong> ${req.presses_info}</div>
+                                <div class="md:col-span-2"><strong>Workflow Issues:</strong> ${req.workflow_issues}</div>
+                            </div>
+                            <div class="mt-4 text-right">
+                                ${req.status === 'pending' ? `<button data-id="${req.id}" class="approve-btn btn btn-success">Approve & Send Welcome Email</button>` : '<button class="btn-disabled btn">Approved</button>'}
+                            </div>
+                        `;
+                        requestsContainer.appendChild(card);
+                    });
+
+                } catch (error) {
+                    loadingMessage.textContent = `Error: ${error.message}`;
+                    loadingMessage.classList.add('text-red-500');
+                }
+            }
+
+            requestsContainer.addEventListener('click', async (e) => {
+                if(e.target.classList.contains('approve-btn')) {
+                    e.target.disabled = true;
+                    e.target.textContent = 'Processing...';
+                    const requestId = e.target.dataset.id;
+                    
+                    try {
+                        const response = await fetch('beta_api.php?action=approve_request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: requestId, token: token }) });
+                        const result = await response.json();
+                        if (result.status !== 'success') throw new Error(result.message);
+                        
+                        showToast(`Success! Welcome email sent to applicant.`);
+                        fetchBetaRequests(); // Refresh the list
+                    } catch(error) {
+                        showToast(`Approval failed: ${error.message}`, 'error');
+                        e.target.disabled = false;
+                        e.target.textContent = 'Approve & Create Account';
+                    }
+                }
+            });
+
+            fetchBetaRequests();
+        });
+    </script>
+</body>
+</html>

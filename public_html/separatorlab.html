@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeparatorLAB PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="ecl-core.css">
+    <link rel="stylesheet" href="ecl-apps.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; }
+        .btn-primary { background-color: #8b5cf6; color: white; border-color: #7c3aed; }
+        .btn-primary:hover:not(:disabled) { background-color: #7c3aed; transform: translateY(-1px); }
+        .btn-secondary { background-color: #334155; color: #cbd5e1; border-color: #475569; }
+        .btn-secondary:hover:not(:disabled) { background-color: #475569; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .file-drop-area { border: 2px dashed #475569; background-color: #1e293b; cursor: pointer; transition: all 0.2s ease; }
+        .file-drop-area:hover { border-color: #8b5cf6; background-color: #334155; }
+        .file-drop-area.drag-over { border-color: #a78bfa; background-color: #4c1d95; }
+
+        .hidden { display: none !important; }
+
+        #main-preview-container { overflow: hidden; background-image: radial-gradient(circle, #334155 1px, transparent 1px); background-size: 20px 20px; position: relative; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #334155; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #8b5cf6; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.2s; }
+        input[type="range"]::-webkit-slider-thumb:hover { background: #a78bfa; transform: scale(1.1); }
+
+        select { background-color: #1e293b; color: #e2e8f0; border: 1px solid #475569; border-radius: 0.5rem; padding: 0.5rem; width: 100%; }
+        select:focus { outline: none; border-color: #8b5cf6; }
+
+        .channel-item { background-color: #334155; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; }
+        .channel-color { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #475569; }
+
+        .floating-window { position: fixed; z-index: 1000; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); backdrop-filter: blur(12px); background-color: rgba(30, 41, 59, 0.98); border: 1px solid #475569; border-radius: 0.75rem; }
+        .window-header { cursor: move; background: linear-gradient(135deg, #334155 0%, #1e293b 100%); border-radius: 0.75rem 0.75rem 0 0; }
+
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e293b; border: 1px solid #475569; border-radius: 0.75rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+
+        .app-footer { background-color: #0f172a; border-top: 1px solid #334155; padding: 0.75rem 1rem; text-align: center; flex-shrink: 0; }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 500; color: #94a3b8; margin-bottom: 0.25rem; }
+        .form-input { width: 100%; background-color: #0f172a; border: 1px solid #475569; border-radius: 0.375rem; padding: 0.5rem 0.75rem; color: #e2e8f0; font-size: 0.875rem; }
+        .form-input:focus { outline: none; border-color: #8b5cf6; }
+
+        .toggle-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: relative; width: 40px; height: 20px; background-color: #475569; border-radius: 20px; transition: 0.3s; }
+        .toggle-slider:before { content: ""; position: absolute; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; border-radius: 50%; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background-color: #8b5cf6; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <nav class="bg-slate-900 border-b border-slate-700 flex-shrink-0">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-tshirt text-white text-lg"></i>
+                    </div>
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-xl font-bold text-white tracking-tight">SeparatorLAB</span>
+                        <span class="text-xs font-bold text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded">PRO</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="/ai-enhancements.html" class="text-sm text-violet-400 hover:text-violet-300 transition flex items-center">
+                        <i class="fas fa-magic mr-2"></i>Open in AI Enhancements
+                    </a>
+                    <a href="dashboard.html" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition" title="Exit to Dashboard">
+                        <i class="fas fa-sign-out-alt text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-4 overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
+
+            <!-- Left Sidebar -->
+            <div class="lg:col-span-3 h-full flex flex-col space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+
+                <!-- Upload -->
+                <div class="card p-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center">
+                        <i class="fas fa-upload mr-2"></i>Input
+                    </h3>
+
+                    <div id="drop-area" class="file-drop-area border-2 border-dashed rounded-lg p-6 text-center">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-violet-500 mb-3"></i>
+                        <p class="text-sm text-slate-300 font-medium">Click or Drag Image</p>
+                        <p class="text-xs text-slate-500 mt-1">PNG, JPEG, WebP</p>
+                        <input type="file" id="fileElem" accept="image/*" class="hidden">
+                    </div>
+
+                    <div id="image-info" class="text-center text-xs text-slate-500 mt-3 p-2 bg-slate-800 rounded">
+                        No image loaded
+                    </div>
+                </div>
+
+                <!-- Color Adjustments -->
+                <div class="card p-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center">
+                        <i class="fas fa-sliders-h mr-2"></i>Color Adjustments
+                    </h3>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Brightness</span>
+                                <span id="brightness-val" class="text-violet-400">0</span>
+                            </label>
+                            <input type="range" id="brightness" min="-100" max="100" value="0">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Contrast</span>
+                                <span id="contrast-val" class="text-violet-400">0</span>
+                            </label>
+                            <input type="range" id="contrast" min="-100" max="100" value="0">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Saturation</span>
+                                <span id="saturation-val" class="text-violet-400">0</span>
+                            </label>
+                            <input type="range" id="saturation" min="-100" max="100" value="0">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Hue</span>
+                                <span id="hue-val" class="text-violet-400">0</span>
+                            </label>
+                            <input type="range" id="hue" min="-180" max="180" value="0">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Lightness</span>
+                                <span id="lightness-val" class="text-violet-400">0</span>
+                            </label>
+                            <input type="range" id="lightness" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2 mt-4">
+                        <button id="btn-apply-adjustments" class="btn btn-primary flex-1 text-xs" disabled>
+                            <i class="fas fa-check mr-1"></i>Apply Adjustments
+                        </button>
+                        <button id="btn-revert-image" class="btn btn-secondary flex-1 text-xs" disabled>
+                            <i class="fas fa-undo mr-1"></i>Revert Image
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Separation Settings -->
+                <div class="card p-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center">
+                        <i class="fas fa-cogs mr-2"></i>Separation Settings
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-2">Method</label>
+                            <select id="sep-method">
+                                <option value="gradient_aware">Gradient Aware</option>
+                                <option value="median_cut">Median Cut</option>
+                                <option value="watershed">Watershed</option>
+                                <option value="simulated_process">Simulated Process</option>
+                                <option value="octree">Octree</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-2">
+                                Max Colors: <span id="color-val" class="text-violet-400 font-bold">8</span>
+                            </label>
+                            <input type="range" id="color-slider" min="2" max="20" value="8">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-2">Ink Type</label>
+                            <select id="ink-type">
+                                <option value="plastisol">Plastisol</option>
+                                <option value="water_based">Water Based</option>
+                                <option value="discharge">Discharge</option>
+                                <option value="pvc">PVC</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-2">Fabric Type</label>
+                            <select id="fabric-type">
+                                <option value="cotton">Cotton</option>
+                                <option value="polyester">Polyester</option>
+                                <option value="blend">Blend</option>
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="use-underbase" checked class="w-4 h-4 rounded border-slate-600 bg-slate-800 text-violet-600 focus:ring-violet-500">
+                            <label for="use-underbase" class="text-xs text-slate-400">Use Underbase</label>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="match-pantone" class="w-4 h-4 rounded border-slate-600 bg-slate-800 text-violet-600 focus:ring-violet-500">
+                            <label for="match-pantone" class="text-xs text-slate-400">Match Pantone</label>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">
+                                <span>Softness</span>
+                                <span id="softness-val" class="text-violet-400">0.6</span>
+                            </label>
+                            <input type="range" id="softness" min="0" max="1" step="0.1" value="0.6">
+                        </div>
+
+                        <button id="btn-process" class="btn btn-primary w-full" disabled>
+                            <i class="fas fa-magic mr-2"></i>Process Separations
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export -->
+                <div class="card p-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </h3>
+
+                    <div class="space-y-2">
+                        <button id="btn-export-all" class="btn btn-secondary w-full text-xs" disabled>
+                            <i class="fas fa-file-archive mr-2"></i>Export All Channels
+                        </button>
+
+                        <button id="btn-export-preview" class="btn btn-secondary w-full text-xs" disabled>
+                            <i class="fas fa-image mr-2"></i>Export Preview
+                        </button>
+
+                        <button id="btn-halftone" class="btn btn-secondary w-full text-xs" disabled>
+                            <i class="fas fa-circle-notch mr-2"></i>Halftone
+                        </button>
+
+                        <button id="btn-production-form" class="btn btn-secondary w-full text-xs" disabled>
+                            <i class="fas fa-clipboard-list mr-2"></i>Open Production Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Canvas Area -->
+            <div class="lg:col-span-9 h-full flex flex-col">
+
+                <!-- Toolbar -->
+                <div class="flex justify-between items-center mb-3 px-2 bg-slate-800/50 rounded-lg p-2">
+                    <div class="flex space-x-2">
+                        <button id="tool-pan" class="p-2 bg-slate-700 rounded hover:bg-violet-600 text-white transition" title="Pan">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                        <button id="tool-zoom-in" class="p-2 bg-slate-700 rounded hover:bg-violet-600 text-white transition" title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button id="tool-zoom-out" class="p-2 bg-slate-700 rounded hover:bg-violet-600 text-white transition" title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button id="tool-fit" class="p-2 bg-slate-700 rounded hover:bg-violet-600 text-white transition px-3 text-sm" title="Fit to Screen">
+                            Fit
+                        </button>
+                        <div class="h-8 border-l border-slate-600 mx-2"></div>
+                        <button id="tool-color-picker" class="p-2 bg-slate-700 rounded hover:bg-violet-600 text-white transition" title="Color Picker">
+                            <i class="fas fa-eye-dropper"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button id="btn-toggle-channels" class="p-2 bg-violet-600 rounded hover:bg-violet-700 text-white text-xs px-3 font-medium transition">
+                            <i class="fas fa-layer-group mr-1"></i>Channels
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Canvas -->
+                <div id="main-preview-container" class="flex-grow bg-slate-800 rounded-lg relative overflow-hidden border border-slate-700">
+                    <div id="placeholder-text" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 pointer-events-none">
+                        <i class="fas fa-tshirt text-6xl mb-4 text-slate-600"></i>
+                        <p class="text-lg font-medium">Upload an image to start</p>
+                        <p class="text-sm text-slate-600 mt-2">Drag & drop or click the upload area</p>
+                    </div>
+
+                    <div id="canvas-container" class="w-full h-full flex items-center justify-center">
+                        <canvas id="main-canvas" class="hidden max-w-full max-h-full"></canvas>
+                    </div>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="flex justify-between items-center mt-3 px-3 py-2 bg-slate-800/50 rounded-lg text-xs text-slate-400">
+                    <div id="cursor-position" class="flex items-center">
+                        <i class="fas fa-crosshairs mr-2 text-violet-400"></i>
+                        <span>X: 0, Y: 0</span>
+                    </div>
+
+                    <div id="zoom-level" class="flex items-center">
+                        <i class="fas fa-search mr-2 text-violet-400"></i>
+                        <span>Zoom: 100%</span>
+                    </div>
+
+                    <div id="image-dimensions" class="flex items-center">
+                        <i class="fas fa-ruler-combined mr-2 text-violet-400"></i>
+                        <span>0 x 0</span>
+                    </div>
+
+                    <div id="color-info" class="flex items-center">
+                        <i class="fas fa-palette mr-2 text-violet-400"></i>
+                        <span>#000000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p class="text-xs text-slate-500">
+            <i class="fas fa-copyright mr-1"></i>ElevatedColorLAB, 2025. All Rights Reserved.
+            <span class="mx-2">|</span>
+            Professional Screen Print Color Separation System - Pro Edition v3.0
+        </p>
+    </footer>
+
+    <!-- Channels Window (Floating) -->
+    <div id="channels-window" class="floating-window hidden" style="top: 80px; right: 30px; width: 320px; max-height: 70vh;">
+        <div class="window-header p-3 flex justify-between items-center text-xs font-bold text-white border-b border-slate-600">
+            <span><i class="fas fa-layer-group mr-2"></i>CHANNELS</span>
+            <button id="btn-close-channels" class="text-slate-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="channels-list" class="p-3 overflow-y-auto max-h-[50vh] custom-scrollbar">
+            <p class="text-xs text-slate-500 text-center py-4">No channels generated yet</p>
+        </div>
+        <div class="p-3 border-t border-slate-600 bg-slate-800/50">
+            <div class="flex space-x-2">
+                <button id="btn-view-channel" class="btn btn-primary flex-1 text-xs" disabled>
+                    <i class="fas fa-eye mr-1"></i>View
+                </button>
+                <button id="btn-export-channel" class="btn btn-secondary flex-1 text-xs" disabled>
+                    <i class="fas fa-download mr-1"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halftone Modal -->
+    <div id="halftone-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b border-slate-600 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white"><i class="fas fa-circle-notch mr-2 text-violet-400"></i>Halftone Settings</h3>
+                <button id="btn-close-halftone" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Frequency -->
+                <div class="form-group">
+                    <label class="form-label">Frequency (LPI)</label>
+                    <select id="halftone-lpi" class="form-input">
+                        <option value="35">35 LPI</option>
+                        <option value="45">45 LPI</option>
+                        <option value="50" selected>50 LPI</option>
+                        <option value="55">55 LPI</option>
+                        <option value="65">65 LPI</option>
+                        <option value="85">85 LPI</option>
+                    </select>
+                </div>
+
+                <!-- Screen Angle -->
+                <div class="form-group">
+                    <label class="form-label">Screen Angle</label>
+                    <select id="halftone-angle" class="form-input">
+                        <option value="0">0°</option>
+                        <option value="15">15°</option>
+                        <option value="22.5" selected>22.5°</option>
+                        <option value="30">30°</option>
+                        <option value="45">45°</option>
+                        <option value="75">75°</option>
+                        <option value="90">90°</option>
+                    </select>
+                </div>
+
+                <!-- Dot Type -->
+                <div class="form-group">
+                    <label class="form-label">Dot Type</label>
+                    <select id="halftone-dot-type" class="form-input">
+                        <option value="elliptical" selected>Elliptical</option>
+                        <option value="round">Round</option>
+                        <option value="square">Square</option>
+                        <option value="line">Line</option>
+                    </select>
+                </div>
+
+                <!-- Dot Size -->
+                <div class="form-group">
+                    <label class="form-label flex justify-between">
+                        <span>Dot Size</span>
+                        <span id="dot-size-val" class="text-violet-400">100%</span>
+                    </label>
+                    <input type="range" id="dot-size" min="50" max="150" value="100">
+                </div>
+
+                <!-- Registration Marks -->
+                <div class="form-group flex items-center justify-between">
+                    <label class="form-label mb-0">Registration Marks</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="registration-marks" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Centerlines -->
+                <div class="form-group flex items-center justify-between">
+                    <label class="form-label mb-0">Centerlines</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="centerlines" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Underbase Type -->
+                <div class="form-group">
+                    <label class="form-label">Underbase Type</label>
+                    <select id="underbase-type" class="form-input">
+                        <option value="solid" selected>Solid Underbase</option>
+                        <option value="grayscale">Greyscale Underbase</option>
+                    </select>
+                </div>
+
+                <!-- File Info -->
+                <div class="bg-slate-800/50 rounded p-3 border border-slate-600">
+                    <p class="text-xs font-bold text-slate-300 mb-2"><i class="fas fa-file mr-1"></i>File Info</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-slate-500">Name:</span> <span id="file-name" class="text-slate-300">-</span></div>
+                        <div><span class="text-slate-500">Size:</span> <span id="file-size" class="text-slate-300">-</span></div>
+                        <div><span class="text-slate-500">Dimensions:</span> <span id="file-dims" class="text-slate-300">-</span></div>
+                        <div><span class="text-slate-500">Resolution:</span> <span id="file-res" class="text-slate-300">300 DPI</span></div>
+                    </div>
+                </div>
+
+                <!-- Print Order -->
+                <div class="bg-slate-800/50 rounded p-3 border border-slate-600">
+                    <p class="text-xs font-bold text-slate-300 mb-2"><i class="fas fa-list-ol mr-1"></i>Print Order</p>
+                    <ul id="print-order-list" class="text-xs text-slate-400 space-y-1">
+                        <li>1. Underbase White</li>
+                        <li>2. Color channels will appear here</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-600 flex space-x-3">
+                <button id="btn-cancel-halftone" class="btn btn-secondary flex-1 text-xs">Cancel</button>
+                <button id="btn-generate-halftone" class="btn btn-primary flex-1 text-xs">
+                    <i class="fas fa-cog mr-1"></i>Generate Halftone Films
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Form Modal -->
+    <div id="production-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="p-4 border-b border-slate-600 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white"><i class="fas fa-clipboard-list mr-2 text-violet-400"></i>Production Form</h3>
+                <button id="btn-close-production" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="form-group">
+                    <label class="form-label">Job Name</label>
+                    <input type="text" id="prod-job-name" class="form-input" placeholder="Enter job name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Client Name</label>
+                    <input type="text" id="prod-client-name" class="form-input" placeholder="Enter client name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Garment Type</label>
+                    <select id="prod-garment-type" class="form-input">
+                        <option value="">Select garment type</option>
+                        <option value="tshirt">T-Shirt</option>
+                        <option value="hoodie">Hoodie</option>
+                        <option value="tank">Tank Top</option>
+                        <option value="longsleeve">Long Sleeve</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" id="prod-quantity" class="form-input" placeholder="Enter quantity" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="prod-notes" class="form-input" rows="3" placeholder="Additional notes..."></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-600 flex space-x-3">
+                <button id="btn-cancel-production" class="btn btn-secondary flex-1 text-xs">Cancel</button>
+                <button id="btn-save-production" class="btn btn-primary flex-1 text-xs">
+                    <i class="fas fa-save mr-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentImage = null;
+        let originalImageData = null;
+        let currentImageData = null;
+        let separationResult = null;
+        let zoomLevel = 1;
+        let selectedChannels = new Set();
+
+        // Default slider values
+        const defaultSliders = {
+            brightness: 0,
+            contrast: 0,
+            saturation: 0,
+            hue: 0,
+            lightness: 0
+        };
+
+        // DOM Elements
+        const dropArea = document.getElementById('drop-area');
+        const fileElem = document.getElementById('fileElem');
+        const imageInfo = document.getElementById('image-info');
+        const mainCanvas = document.getElementById('main-canvas');
+        const canvasContainer = document.getElementById('canvas-container');
+        const placeholderText = document.getElementById('placeholder-text');
+        const channelsWindow = document.getElementById('channels-window');
+        const ctx = mainCanvas.getContext('2d', { willReadFrequently: true });
+
+        // Sliders
+        const sliders = {
+            brightness: { el: document.getElementById('brightness'), val: document.getElementById('brightness-val') },
+            contrast: { el: document.getElementById('contrast'), val: document.getElementById('contrast-val') },
+            saturation: { el: document.getElementById('saturation'), val: document.getElementById('saturation-val') },
+            hue: { el: document.getElementById('hue'), val: document.getElementById('hue-val') },
+            lightness: { el: document.getElementById('lightness'), val: document.getElementById('lightness-val') },
+            colors: { el: document.getElementById('color-slider'), val: document.getElementById('color-val') },
+            softness: { el: document.getElementById('softness'), val: document.getElementById('softness-val') }
+        };
+
+        // Buttons
+        const btnApply = document.getElementById('btn-apply-adjustments');
+        const btnRevert = document.getElementById('btn-revert-image');
+        const btnProcess = document.getElementById('btn-process');
+        const btnExportAll = document.getElementById('btn-export-all');
+        const btnExportPreview = document.getElementById('btn-export-preview');
+        const btnHalftone = document.getElementById('btn-halftone');
+        const btnProductionForm = document.getElementById('btn-production-form');
+        const btnToggleChannels = document.getElementById('btn-toggle-channels');
+        const btnCloseChannels = document.getElementById('btn-close-channels');
+        const btnViewChannel = document.getElementById('btn-view-channel');
+        const btnExportChannel = document.getElementById('btn-export-channel');
+
+        // Modals
+        const halftoneModal = document.getElementById('halftone-modal');
+        const productionModal = document.getElementById('production-modal');
+
+        // Initialize sliders
+        Object.keys(sliders).forEach(key => {
+            const slider = sliders[key];
+            slider.el.addEventListener('input', () => {
+                slider.val.textContent = slider.el.value;
+                if (['brightness', 'contrast', 'saturation', 'hue', 'lightness'].includes(key)) {
+                    applyColorAdjustments();
+                }
+            });
+        });
+
+        // File Upload
+        dropArea.addEventListener('click', () => fileElem.click());
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('drag-over');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('drag-over');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length) handleFile(files[0]);
+        });
+
+        fileElem.addEventListener('change', () => {
+            if (fileElem.files.length) handleFile(fileElem.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage = img;
+                    displayImage(img);
+                    imageInfo.textContent = `${file.name} (${img.width}x${img.height})`;
+                    enableControls();
+                    updateFileInfo(file.name, img.width, img.height);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayImage(img) {
+            placeholderText.classList.add('hidden');
+            mainCanvas.classList.remove('hidden');
+
+            // Set canvas dimensions
+            mainCanvas.width = img.width;
+            mainCanvas.height = img.height;
+
+            // Fit to container
+            const containerRect = canvasContainer.getBoundingClientRect();
+            const scale = Math.min(
+                containerRect.width / img.width,
+                containerRect.height / img.height,
+                1
+            );
+
+            mainCanvas.style.width = `${img.width * scale}px`;
+            mainCanvas.style.height = `${img.height * scale}px`;
+
+            // Draw image and store original data
+            ctx.drawImage(img, 0, 0);
+            originalImageData = ctx.getImageData(0, 0, img.width, img.height);
+            currentImageData = new ImageData(
+                new Uint8ClampedArray(originalImageData.data),
+                originalImageData.width,
+                originalImageData.height
+            );
+
+            zoomLevel = scale;
+            updateStatusBar();
+        }
+
+        function enableControls() {
+            btnApply.disabled = false;
+            btnRevert.disabled = false;
+            btnProcess.disabled = false;
+            btnHalftone.disabled = false;
+            btnProductionForm.disabled = false;
+        }
+
+        function updateFileInfo(name, width, height) {
+            document.getElementById('file-name').textContent = name;
+            document.getElementById('file-dims').textContent = `${width} x ${height}`;
+            document.getElementById('file-size').textContent = `${Math.round(width * height / 1000000 * 100) / 100} MP`;
+        }
+
+        // Color Adjustment Functions
+        function applyColorAdjustments() {
+            if (!originalImageData) return;
+
+            const brightness = parseInt(sliders.brightness.el.value);
+            const contrast = parseInt(sliders.contrast.el.value);
+            const saturation = parseInt(sliders.saturation.el.value);
+            const hue = parseInt(sliders.hue.el.value);
+            const lightness = parseInt(sliders.lightness.el.value);
+
+            const data = new Uint8ClampedArray(originalImageData.data);
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+
+                // Convert to HSL for hue/saturation/lightness
+                let [h, s, l] = rgbToHsl(r, g, b);
+
+                // Apply hue
+                h = (h + hue / 360) % 1;
+                if (h < 0) h += 1;
+
+                // Apply saturation
+                s = Math.max(0, Math.min(1, s * (1 + saturation / 100)));
+
+                // Apply lightness
+                l = Math.max(0, Math.min(1, l * (1 + lightness / 100)));
+
+                // Convert back to RGB
+                [r, g, b] = hslToRgb(h, s, l);
+
+                // Apply brightness
+                r = Math.max(0, Math.min(255, r + brightness * 2.55));
+                g = Math.max(0, Math.min(255, g + brightness * 2.55));
+                b = Math.max(0, Math.min(255, b + brightness * 2.55));
+
+                // Apply contrast
+                const contrastFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+                r = Math.max(0, Math.min(255, contrastFactor * (r - 128) + 128));
+                g = Math.max(0, Math.min(255, contrastFactor * (g - 128) + 128));
+                b = Math.max(0, Math.min(255, contrastFactor * (b - 128) + 128));
+
+                data[i] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+            }
+
+            currentImageData = new ImageData(data, originalImageData.width, originalImageData.height);
+            ctx.putImageData(currentImageData, 0, 0);
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return [h, s, l];
+        }
+
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        // Apply Adjustments Button
+        btnApply.addEventListener('click', () => {
+            if (currentImageData) {
+                originalImageData = new ImageData(
+                    new Uint8ClampedArray(currentImageData.data),
+                    currentImageData.width,
+                    currentImageData.height
+                );
+                alert('Adjustments applied');
+            }
+        });
+
+        // Revert Image Button
+        btnRevert.addEventListener('click', () => {
+            if (originalImageData) {
+                ctx.putImageData(originalImageData, 0, 0);
+                currentImageData = new ImageData(
+                    new Uint8ClampedArray(originalImageData.data),
+                    originalImageData.width,
+                    originalImageData.height
+                );
+
+                // Reset sliders
+                Object.keys(defaultSliders).forEach(key => {
+                    sliders[key].el.value = defaultSliders[key];
+                    sliders[key].val.textContent = defaultSliders[key];
+                });
+            }
+        });
+
+        // Process separation (stub)
+        btnProcess.addEventListener('click', async () => {
+            if (!currentImage) return;
+
+            btnProcess.disabled = true;
+            btnProcess.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+            // Simulate processing delay
+            setTimeout(() => {
+                // Create placeholder channels
+                const channels = [
+                    { name: 'Underbase White', color: '#FFFFFF', type: 'UNDERBASE', coverage_percent: 85 },
+                    { name: 'Color 1', color: '#FF0000', type: 'SPOT_COLOR', coverage_percent: 45 },
+                    { name: 'Color 2', color: '#00FF00', type: 'SPOT_COLOR', coverage_percent: 30 },
+                    { name: 'Color 3', color: '#0000FF', type: 'SPOT_COLOR', coverage_percent: 25 }
+                ];
+
+                separationResult = { channels };
+                displayChannels(channels);
+                updatePrintOrder(channels);
+
+                btnExportAll.disabled = false;
+                btnExportPreview.disabled = false;
+                btnProcess.disabled = false;
+                btnProcess.innerHTML = '<i class="fas fa-magic mr-2"></i>Process Separations';
+            }, 1500);
+        });
+
+        function displayChannels(channels) {
+            const channelsList = document.getElementById('channels-list');
+            channelsList.innerHTML = '';
+            selectedChannels.clear();
+
+            channels.forEach((channel, index) => {
+                const item = document.createElement('div');
+                item.className = 'channel-item flex items-center space-x-3 cursor-pointer hover:bg-slate-600 transition';
+                item.dataset.index = index;
+                item.innerHTML = `
+                    <input type="checkbox" class="channel-checkbox w-4 h-4 rounded border-slate-500 bg-slate-700 text-violet-600 focus:ring-violet-500">
+                    <div class="channel-color" style="background-color: ${channel.color}"></div>
+                    <div class="flex-1">
+                        <p class="text-xs font-medium text-white">${channel.name}</p>
+                        <p class="text-xs text-slate-400">${channel.type} | ${channel.coverage_percent}% coverage</p>
+                    </div>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = item.querySelector('.channel-checkbox');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                    toggleChannelSelection(index, item);
+                });
+
+                channelsList.appendChild(item);
+            });
+        }
+
+        function updatePrintOrder(channels) {
+            const list = document.getElementById('print-order-list');
+            list.innerHTML = channels.map((ch, i) => `<li>${i + 1}. ${ch.name}</li>`).join('');
+        }
+
+        function toggleChannelSelection(index, element) {
+            const checkbox = element.querySelector('.channel-checkbox');
+            if (checkbox.checked) {
+                selectedChannels.add(index);
+                element.classList.add('bg-slate-600', 'border', 'border-violet-500');
+            } else {
+                selectedChannels.delete(index);
+                element.classList.remove('bg-slate-600', 'border', 'border-violet-500');
+            }
+
+            btnViewChannel.disabled = selectedChannels.size !== 1;
+            btnExportChannel.disabled = selectedChannels.size === 0;
+        }
+
+        // Channels window
+        btnToggleChannels.addEventListener('click', () => {
+            channelsWindow.classList.toggle('hidden');
+        });
+
+        btnCloseChannels.addEventListener('click', () => {
+            channelsWindow.classList.add('hidden');
+        });
+
+        // Halftone Modal
+        btnHalftone.addEventListener('click', () => {
+            halftoneModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-halftone').addEventListener('click', () => {
+            halftoneModal.classList.add('hidden');
+        });
+
+        document.getElementById('btn-cancel-halftone').addEventListener('click', () => {
+            halftoneModal.classList.add('hidden');
+        });
+
+        document.getElementById('btn-generate-halftone').addEventListener('click', () => {
+            alert('Halftone generation initiated');
+            halftoneModal.classList.add('hidden');
+        });
+
+        // Dot size slider
+        document.getElementById('dot-size').addEventListener('input', (e) => {
+            document.getElementById('dot-size-val').textContent = e.target.value + '%';
+        });
+
+        // Production Form Modal
+        btnProductionForm.addEventListener('click', () => {
+            productionModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-production').addEventListener('click', () => {
+            productionModal.classList.add('hidden');
+        });
+
+        document.getElementById('btn-cancel-production').addEventListener('click', () => {
+            productionModal.classList.add('hidden');
+        });
+
+        document.getElementById('btn-save-production').addEventListener('click', () => {
+            alert('Production form saved');
+            productionModal.classList.add('hidden');
+        });
+
+        // Toolbar tools
+        document.getElementById('tool-zoom-in').addEventListener('click', () => {
+            zoomLevel *= 1.2;
+            applyZoom();
+        });
+
+        document.getElementById('tool-zoom-out').addEventListener('click', () => {
+            zoomLevel /= 1.2;
+            applyZoom();
+        });
+
+        document.getElementById('tool-fit').addEventListener('click', () => {
+            if (!currentImage) return;
+            const containerRect = canvasContainer.getBoundingClientRect();
+            zoomLevel = Math.min(
+                containerRect.width / currentImage.width,
+                containerRect.height / currentImage.height,
+                1
+            );
+            applyZoom();
+        });
+
+        function applyZoom() {
+            if (!currentImage) return;
+            mainCanvas.style.width = `${currentImage.width * zoomLevel}px`;
+            mainCanvas.style.height = `${currentImage.height * zoomLevel}px`;
+            updateStatusBar();
+        }
+
+        // Canvas interactions
+        mainCanvas.addEventListener('mousemove', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / zoomLevel);
+            const y = Math.floor((e.clientY - rect.top) / zoomLevel);
+
+            document.getElementById('cursor-position').innerHTML = `
+                <i class="fas fa-crosshairs mr-2 text-violet-400"></i>
+                <span>X: ${x}, Y: ${y}</span>
+            `;
+
+            if (x >= 0 && x < mainCanvas.width && y >= 0 && y < mainCanvas.height) {
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                const hex = '#' + [pixel[0], pixel[1], pixel[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                document.getElementById('color-info').innerHTML = `
+                    <i class="fas fa-palette mr-2 text-violet-400"></i>
+                    <span>${hex.toUpperCase()}</span>
+                `;
+            }
+        });
+
+        function updateStatusBar() {
+            document.getElementById('zoom-level').innerHTML = `
+                <i class="fas fa-search mr-2 text-violet-400"></i>
+                <span>Zoom: ${Math.round(zoomLevel * 100)}%</span>
+            `;
+
+            if (currentImage) {
+                document.getElementById('image-dimensions').innerHTML = `
+                    <i class="fas fa-ruler-combined mr-2 text-violet-400"></i>
+                    <span>${currentImage.width} x ${currentImage.height}</span>
+                `;
+            }
+        }
+
+        // Make channels window draggable
+        let isDraggingWindow = false;
+        let windowOffsetX = 0;
+        let windowOffsetY = 0;
+        const windowHeader = channelsWindow.querySelector('.window-header');
+
+        windowHeader.addEventListener('mousedown', (e) => {
+            isDraggingWindow = true;
+            windowOffsetX = e.clientX - channelsWindow.offsetLeft;
+            windowOffsetY = e.clientY - channelsWindow.offsetTop;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingWindow) {
+                channelsWindow.style.left = (e.clientX - windowOffsetX) + 'px';
+                channelsWindow.style.top = (e.clientY - windowOffsetY) + 'px';
+                channelsWindow.style.right = 'auto';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDraggingWindow = false;
+        });
+
+        // Close modals on overlay click
+        halftoneModal.addEventListener('click', (e) => {
+            if (e.target === halftoneModal) halftoneModal.classList.add('hidden');
+        });
+
+        productionModal.addEventListener('click', (e) => {
+            if (e.target === productionModal) productionModal.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

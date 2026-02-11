@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Mockup Generator | ElevatedColorLab</title>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Three.js Core & Addons -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Embedded Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0D1117; color: #c9d1d9; }
+        
+        /* UI Components */
+        .main-panel { background-color: #161B22; border: 1px solid #30363D; border-radius: 0.5rem; }
+        .form-select, .form-input { background-color: #0D1117; border: 1px solid #30363D; color: #c9d1d9; border-radius: 0.375rem; width: 100%; padding: 0.5rem; font-size: 0.8rem; }
+        .form-select:focus, .form-input:focus { outline: none; border-color: #6366f1; }
+        
+        /* Custom Range Slider */
+        .form-range {
+            -webkit-appearance: none; width: 100%; height: 4px; border-radius: 5px; background: #30363D; outline: none; margin-top: 0.5rem;
+        }
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid #161B22; transition: transform 0.1s;
+        }
+        .form-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        
+        /* Color Swatches */
+        .color-swatch-btn {
+            display: block; width: 1.75rem; height: 1.75rem; border-radius: 9999px; cursor: pointer;
+            border: 2px solid #4B5563; transition: all 0.1s; position: relative;
+        }
+        .color-swatch-btn:hover { transform: scale(1.1); border-color: #9CA3AF; }
+        
+        /* Active Preview (Blue Ring) */
+        .color-swatch-btn.active-preview { 
+            border-color: #3b82f6; /* Blue-500 */
+            box-shadow: 0 0 0 2px #161B22, 0 0 0 4px #3b82f6; 
+            z-index: 10;
+        }
+
+        /* Approved (Red Pulsing Ring) */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.7); }
+            100% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
+        .color-swatch-btn.active-approved::after {
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
+            border: 2px solid #ef4444; /* Red-500 */
+            animation: pulse-red 2s infinite;
+            pointer-events: none;
+        }
+        
+        /* If both active, combine visuals */
+        .color-swatch-btn.active-preview.active-approved {
+            border-color: #3b82f6; /* Blue inner border still visible */
+        }
+
+        /* Buttons */
+        .btn-secondary { background-color: #21262D; color: #c9d1d9; border: 1px solid #30363D; padding: 0.5rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; }
+        .btn-secondary:hover { background-color: #30363D; border-color: #8B949E; }
+        
+        .btn-primary { background-color: #238636; color: white; border: 1px solid rgba(240,246,252,0.1); font-weight: 600; }
+        .btn-primary:hover { background-color: #2ea043; }
+        .btn-primary:disabled { background-color: #21262D; color: #8B949E; cursor: not-allowed; border-color: #30363D; }
+        
+        .file-label-button {
+            background-color: #21262D; color: #c9d1d9; padding: 0.5rem 1rem; border-radius: 0.375rem;
+            text-decoration: none; font-weight: 500; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.5rem;
+            cursor: pointer; border: 1px solid #30363D; transition: background-color 0.2s, border-color 0.2s;
+        }
+        .file-label-button:hover { background-color: #303D; border-color: #8B949E; }
+
+        /* Viewer & Loader */
+        #viewer-container { width: 100%; height: 100%; position: relative; background-color: #1e242c; border-radius: 0.5rem; cursor: default; }
+        #loader { border: 4px solid #30363D; border-top: 4px solid #6366f1; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; position: absolute; top: 50%; left: 50%; margin: -20px 0 0 -20px; z-index: 50; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Layer List - VISUAL GRID STYLE */
+        #layer-list-container {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;
+        }
+        .layer-card { 
+            border: 1px solid #30363D; border-radius: 0.5rem; background: #0D1117; 
+            cursor: pointer; transition: all 0.2s; overflow: hidden; position: relative;
+            height: 160px; /* Fixed height for consistency */
+        }
+        .layer-card:hover { border-color: #8B949E; transform: translateY(-2px); }
+        .layer-card.selected { border-color: #6366f1; box-shadow: 0 0 0 1px #6366f1; background: #161B22; }
+        
+        .layer-card-thumb-box {
+            height: 110px; width: 100%; background: #21262D; 
+            display: flex; align-items: center; justify-content: center;
+            background-image: radial-gradient(#30363D 1px, transparent 1px); background-size: 10px 10px;
+        }
+        .layer-card-thumb { max-height: 100%; max-width: 100%; object-fit: contain; padding: 4px; }
+        .layer-card-info { padding: 0.5rem; text-align: center; }
+        .layer-card-zone { font-size: 0.7rem; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Floating Editor */
+        #floating-editor {
+            position: absolute; top: 1rem; right: 1rem; width: 260px;
+            background-color: rgba(22, 27, 34, 0.95); backdrop-filter: blur(8px);
+            border: 1px solid #30363D; border-radius: 0.5rem; padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 40;
+            transition: opacity 0.2s, transform 0.2s;
+            opacity: 0; pointer-events: none; transform: translateY(10px);
+        }
+        #floating-editor.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+        /* Approval Swatches */
+        .approval-swatch-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; border-radius: 0.375rem; transition: background-color 0.2s; cursor: pointer; }
+        .approval-swatch-row:hover { background-color: #21262D; }
+        .approval-swatch-row.active { background-color: #1c1e26; border: 1px solid #30363D; }
+        .approval-swatch-circle { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid #4B5563; }
+        .approval-checkbox { width: 1rem; height: 1rem; accent-color: #238636; cursor: pointer; }
+        
+        /* FLOATING COLOR MENU (Inside Viewer) */
+        #approval-floating-colors {
+            position: absolute; top: 1rem; left: 1rem; width: 280px; 
+            background-color: rgba(22, 27, 34, 0.95); backdrop-filter: blur(8px);
+            border: 1px solid #30363D; border-radius: 0.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 400px; overflow-y: auto; z-index: 60; /* Ensure high z-index */
+            /* display: none; Managed via JS .hidden class */
+        }
+
+        .color-select-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; font-size: 0.75rem; }
+        .color-select-item:hover { background-color: #21262D; border-radius: 0.25rem; }
+        .color-select-checkbox { accent-color: #6366f1; }
+
+        .controls-column::-webkit-scrollbar { width: 8px; }
+        .controls-column::-webkit-scrollbar-track { background: #161B22; }
+        .controls-column::-webkit-scrollbar-thumb { background: #30363D; border-radius: 4px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="h-full flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-[#1f2937]/90 backdrop-blur border-b border-slate-700 flex-shrink-0 z-20">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center h-16 gap-8">
+                 <div class="flex items-center gap-3 flex-shrink-0">
+                     <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white">
+                         <i class="fas fa-layer-group"></i>
+                     </div>
+                     <span class="text-xl font-bold text-white tracking-tight">Elevated<span class="text-blue-500">ColorLab</span></span>
+                 </div>
+                 <div class="flex items-center gap-5">
+                     <a href="https://elevatedcolorlab.com/dashboard.html" class="text-gray-300 hover:text-white text-sm font-medium transition-colors">Dashboard</a>
+                     <!-- Plain text title -->
+                     <span class="text-white px-3 py-1.5 text-sm font-medium cursor-default">3D Mockup Generator</span>
+                 </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Grid -->
+    <main class="flex-1 px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden relative">
+        
+        <!-- Left Panel: Controls (Editor Mode) -->
+        <div id="editor-controls" class="lg:col-span-3 h-full overflow-y-auto controls-column pr-2 transition-opacity duration-300">
+            <div class="main-panel p-5 space-y-6 flex flex-col h-full">
+                
+                <!-- 1. Garment -->
+                <section>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">1. Garment</h3>
+                    <div class="space-y-3">
+                        <div><label class="block text-xs font-medium mb-1 text-gray-400">Brand</label><select id="brand-select" class="form-select"></select></div>
+                        <div><label class="block text-xs font-medium mb-1 text-gray-400">Style</label><select id="style-select" class="form-select"></select></div>
+                        <div>
+                            <label class="block text-xs font-medium mb-2 text-gray-400">
+                                Preview Color <span class="text-[10px] font-normal text-gray-500 ml-1">(Double-click to add to approval)</span>
+                            </label>
+                            <div id="color-swatches" class="flex gap-2 flex-wrap"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="border-gray-700">
+
+                <!-- 2. Layers / Design -->
+                <section class="flex-grow">
+                    <div class="flex justify-between items-end mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500">2. Designs</h3>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <input type="file" id="file-input" accept="image/png, image/jpeg" class="hidden">
+                        <label for="file-input" class="file-label-button flex-1 justify-center hover:text-white text-xs">
+                            <i class="fas fa-plus mr-2"></i>Add Layer
+                        </label>
+                    </div>
+
+                    <!-- Layer List -->
+                    <div id="layer-list-container" class="mb-4 max-h-64 overflow-y-auto space-y-2">
+                        <!-- Layers injected here -->
+                    </div>
+                    
+                    <p id="no-layer-msg" class="text-xs text-gray-500 text-center italic py-4">No designs added yet.</p>
+                </section>
+
+                <hr class="border-gray-700">
+
+                <!-- Project Info & Sign-Off (Moved here) -->
+                <section class="pb-4">
+                    <div class="space-y-3 mb-4">
+                        <div><label class="block text-xs font-medium mb-1 text-gray-400">PO Number</label><input type="text" id="po-number" class="form-input" placeholder="Optional"></div>
+                        <div><label class="block text-xs font-medium mb-1 text-gray-400">Customer Name</label><input type="text" id="customer-name" class="form-input" placeholder="Optional"></div>
+                    </div>
+                    <button id="approval-mode-btn" class="btn-primary w-full py-3 rounded flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-check-circle"></i> Preview & Sign-Off
+                    </button>
+                </section>
+            </div>
+        </div>
+
+        <!-- Right Panel: 3D Viewer & Wrapper -->
+        <div id="viewer-column" class="lg:col-span-9 h-full flex flex-col relative transition-all duration-300">
+            <!-- Portable Viewer Module -->
+            <div class="main-panel flex-1 overflow-hidden relative w-full h-full" id="portable-viewer-module">
+                <div id="viewer-container"></div>
+                
+                <div id="loader"></div>
+
+                <!-- FLOATING EDITOR (The "Popup Tool") -->
+                <div id="floating-editor">
+                    <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
+                        <h4 class="text-xs font-bold text-white uppercase tracking-wide" id="floating-editor-title">Edit Layer</h4>
+                        <button id="close-editor-btn" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="block text-[10px] font-medium text-gray-400 mb-1">Placement Zone</label>
+                        <select id="print-zone-select" class="form-select text-xs py-1"></select>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-400"><label>Scale</label><span id="val-scale">1.0</span></div>
+                            <input type="range" id="slider-scale" min="0.1" max="2" step="0.01" value="1" class="form-range">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-400"><label>Horizontal</label><span id="val-x">0</span></div>
+                            <input type="range" id="slider-x" min="-0.3" max="0.3" step="0.001" value="0" class="form-range">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-400"><label>Vertical</label><span id="val-y">0</span></div>
+                            <input type="range" id="slider-y" min="-0.3" max="0.3" step="0.001" value="0" class="form-range">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-400"><label>Rotation</label><span id="val-rot">0°</span></div>
+                            <input type="range" id="slider-rot" min="-180" max="180" step="1" value="0" class="form-range">
+                        </div>
+                        
+                        <!-- Print Size Readout -->
+                        <div class="text-[10px] text-blue-400 text-center pt-1 border-t border-gray-800">
+                            Print Size: <span id="layer-print-size" class="font-bold">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-t border-gray-700 flex gap-2">
+                        <button id="delete-layer-btn" class="btn-secondary w-full text-xs text-red-400 hover:text-red-300 border-red-900/50 bg-red-900/10">
+                            <i class="fas fa-trash mr-1"></i> Remove
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- NEW: FLOATING APPROVAL COLOR MENU (Inside Viewer) -->
+                <div id="approval-floating-colors" class="hidden">
+                    <div class="text-xs font-bold text-white uppercase tracking-wide p-3 border-b border-gray-700 bg-[#161B22]">
+                        Review Colors
+                        <span class="block text-[10px] text-gray-500 font-normal normal-case mt-1">Click to view. Check to approve.</span>
+                    </div>
+                    <div id="approval-colors-list" class="p-2 space-y-1 max-h-64 overflow-y-auto">
+                        <!-- JS Injects Rows Here -->
+                    </div>
+                </div>
+
+                <div id="error-box" class="hidden absolute top-4 left-4 right-4 bg-red-900/90 border border-red-500 text-white p-4 rounded shadow-lg z-50">
+                    <h4 class="font-bold flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> Error</h4>
+                    <p id="error-text" class="text-sm mt-1 opacity-90"></p>
+                    <button onclick="document.getElementById('error-box').classList.add('hidden')" class="absolute top-2 right-2 text-white hover:text-red-200">&times;</button>
+                </div>
+                
+                <!-- Unified View Controls -->
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#161B22]/90 backdrop-blur border border-gray-700 px-4 py-2 rounded-full shadow-xl z-30">
+                    <button id="zoom-out-btn" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-search-minus"></i></button>
+                    <input type="range" id="view-zoom-slider" min="0.5" max="3" step="0.1" value="1" class="w-24 accent-blue-500 h-1 bg-gray-600 rounded-lg cursor-pointer">
+                    <button id="zoom-in-btn" class="text-gray-400 hover:text-white transition-colors"><i class="fas fa-search-plus"></i></button>
+                    <div class="w-px h-4 bg-gray-600 mx-1"></div>
+                    <button id="reset-view-btn" class="text-gray-400 hover:text-white transition-colors" title="Reset Camera"><i class="fas fa-sync-alt"></i></button>
+                    <button id="rotate-toggle-btn" class="text-gray-400 hover:text-white transition-colors" title="Auto Rotate"><i class="fas fa-cube"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approval Mode Overlay -->
+        <div id="approval-overlay" class="hidden p-8 overflow-y-auto absolute inset-0 bg-[#0D1117] z-50">
+             <div class="max-w-[110rem] mx-auto w-full space-y-6">
+                 <div class="flex justify-between items-center">
+                     <h1 class="text-2xl font-bold text-white">Digital Mockup Approval</h1>
+                     <button id="exit-approval-btn" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                 </div>
+                 
+                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                     
+                     <!-- Left Column: Details & Signing (1 Col) -->
+                     <div class="space-y-6 flex flex-col lg:col-span-1">
+                         <div class="bg-[#161B22] p-6 rounded-lg border border-[#30363d]">
+                             <h3 class="text-lg font-semibold text-white mb-4">Order Details</h3>
+                             <div class="space-y-2 text-sm text-gray-300" id="approval-meta"></div>
+                             <div class="mt-4 text-xs text-gray-500 italic">
+                                 Color options available in viewer.
+                             </div>
+                         </div>
+                         
+                         <div class="bg-[#161B22] p-6 rounded-lg border border-[#30363d] flex-grow">
+                             <h3 class="text-lg font-semibold text-white mb-4">Digital Sign-Off</h3>
+                             <p class="text-xs text-gray-400 mb-4">
+                                 By signing below, you approve the digital mockup and selected colors. Placement tolerance ±0.5". 
+                                 Colors are approximations. Please double-check spelling and artwork details before signing.
+                             </p>
+                             <div class="space-y-4">
+                                 <div><label class="block text-xs font-medium mb-1 text-gray-400">Approver Name</label><input type="text" id="signer-name" class="form-input" placeholder="Enter full name"></div>
+                                 <div><label class="block text-xs font-medium mb-1 text-gray-400">Date</label><input type="date" id="signer-date" class="form-input"></div>
+                                 
+                                 <!-- Save & Email Buttons -->
+                                 <div class="grid grid-cols-1 gap-2">
+                                     <button id="final-sign-btn" class="btn-primary w-full py-2 rounded"><i class="fas fa-file-download mr-2"></i>Save Tech Pack</button>
+                                     <button id="email-approval-btn" class="btn-secondary w-full py-2 rounded text-blue-400 border-blue-900/50 hover:bg-blue-900/20"><i class="fas fa-envelope mr-2"></i>Send to Client</button>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- Right Column: Viewer Target (3 Cols for wider view) -->
+                     <!-- MODIFIED: Height 846px -->
+                     <div id="approval-viewer-target" class="h-[846px] lg:col-span-3 bg-[#1e242c] rounded-lg border border-[#30363d] relative overflow-hidden flex flex-col">
+                         <div class="absolute top-4 right-4 text-xs text-gray-500 bg-black/50 px-3 py-1 rounded-full pointer-events-none z-20">Read Only Mode</div>
+                         <!-- Viewer moved here dynamically -->
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
+        const { jsPDF } = window.jspdf;
+
+        const SERVER_PATH = "https://elevatedcolorlab.com/mockup_generator/";
+        const REAL_GARMENT_HEIGHT_CM = 74.0; // Approx Medium Shirt Height
+        
+        // --- FULL GILDAN 5000 COLOR PALETTE ---
+        const fullGildan5000Colors = [
+            {n:"White", v:"#FFFFFF"}, {n:"Black", v:"#111111"}, {n:"Navy", v:"#1a2a4c"}, {n:"Sport Grey", v:"#a0a0a0"}, {n:"Red", v:"#c41e3a"}, {n:"Royal", v:"#1560bd"},
+            {n:"Antique Cherry Red", v:"#7c1c2b"}, {n:"Antique Irish Green", v:"#00683f"}, {n:"Antique Jade Dome", v:"#006e63"}, {n:"Antique Orange", v:"#cc4d15"}, {n:"Antique Sapphire", v:"#13526d"},
+            {n:"Ash", v:"#cfcfcf"}, {n:"Azalea", v:"#f38ab1"}, {n:"Berry", v:"#771e39"}, {n:"Blackberry", v:"#292436"}, {n:"Blue Dusk", v:"#3d4655"},
+            {n:"Cardinal Red", v:"#8a1e2b"}, {n:"Carolina Blue", v:"#7ba4db"}, {n:"Charcoal", v:"#363636"}, {n:"Cherry Red", v:"#bf0d16"}, {n:"Coral Silk", v:"#ff7f66"},
+            {n:"Cornsilk", v:"#fcf5b3"}, {n:"Daisy", v:"#fecb00"}, {n:"Dark Chocolate", v:"#38251e"}, {n:"Dark Heather", v:"#404040"}, {n:"Electric Green", v:"#5dbb61"},
+            {n:"Forest Green", v:"#113021"}, {n:"Garnet", v:"#5f131d"}, {n:"Gold", v:"#ffb81c"}, {n:"Graphite Heather", v:"#676767"}, {n:"Gravel", v:"#989ea1"},
+            {n:"Heather Cardinal", v:"#8a3324"}, {n:"Heather Indigo", v:"#484b63"}, {n:"Heather Military Green", v:"#4b5320"}, {n:"Heather Navy", v:"#303848"},
+            {n:"Heather Orange", v:"#de592c"}, {n:"Heather Purple", v:"#502f5e"}, {n:"Heather Red", v:"#b0202b"}, {n:"Heather Royal", v:"#2a5baf"},
+            {n:"Heather Sapphire", v:"#1d7596"}, {n:"Heliconia", v:"#db0b5e"}, {n:"Ice Grey", v:"#d0d3d4"}, {n:"Indigo Blue", v:"#36485f"}, {n:"Irish Green", v:"#009444"},
+            {n:"Jade Dome", v:"#008579"}, {n:"Kelly Green", v:"#007a3d"}, {n:"Kiwi", v:"#8dc63f"}, {n:"Light Blue", v:"#a0c3d6"}, {n:"Light Pink", v:"#f4c1c7"},
+            {n:"Lilac", v:"#b892c2"}, {n:"Lime", v:"#7ac142"}, {n:"Maroon", v:"#5d232f"}, {n:"Midnight", v:"#1d2838"}, {n:"Military Green", v:"#4b5320"},
+            {n:"Mint Green", v:"#a2e4b8"}, {n:"Natural", v:"#f5f5dc"}, {n:"Old Gold", v:"#ba9636"}, {n:"Orange", v:"#e04f24"}, {n:"Purple", v:"#4a255f"},
+            {n:"Russet", v:"#592d23"}, {n:"Safety Green", v:"#dfff00"}, {n:"Safety Orange", v:"#ff7900"}, {n:"Safety Pink", v:"#ff69b4"}, {n:"Sand", v:"#d8cbb7"},
+            {n:"Sapphire", v:"#0067a5"}, {n:"Sky", v:"#76b9e7"}, {n:"Stone Blue", v:"#738aa3"}, {n:"Sunset", v:"#ef533b"}, {n:"T. Orange", v:"#d64e27"},
+            {n:"Tan", v:"#c3a582"}, {n:"Tropical Blue", v:"#007cba"}, {n:"Turf Green", v:"#00552e"}, {n:"Tweed", v:"#3e3e3e"}, {n:"Violet", v:"#9580a8"}, {n:"Yellow Haze", v:"#f9d587"}
+        ];
+
+        // --- DATABASE ---
+        const garmentDatabase = {
+            "Generic": {
+                "Boxy T-Shirt": { file: "box_tshirt.glb", type: "tshirt", colors: fullGildan5000Colors },
+                "Fitted T-Shirt": { file: "fitted_tshirt.glb", type: "tshirt", colors: fullGildan5000Colors },
+                "Long Sleeve": { file: "long_sleeve_t-_shirt.glb", type: "longsleeve", colors: [{n:"White",v:"#FFFFFF"}, {n:"Black",v:"#111111"}, {n:"Navy",v:"#1a2a4c"}, {n:"Sport Grey",v:"#a0a0a0"}] },
+                "Women's T-Shirt": { file: "womens_tshirt.glb", type: "tshirt", colors: [{n:"White",v:"#FFFFFF"}, {n:"Black",v:"#111111"}, {n:"Pink",v:"#ffc0cb"}] }
+            },
+            "Gildan": {
+                "5000 (Boxy)": { preset: "Gildan_Boxy_SS", type: "tshirt", colors: fullGildan5000Colors },
+                "2400 (Long Sleeve)": { preset: "Gildan_CrewSweatshirt_Boxy", type: "longsleeve", colors: [{n:"White",v:"#FFFFFF"}, {n:"Black",v:"#111111"}, {n:"Navy",v:"#1a2a4c"}, {n:"Sport Grey",v:"#a0a0a0"}, {n:"Red",v:"#c41e3a"}, {n:"Royal",v:"#1560bd"}, {n:"Forest Green",v:"#113021"}, {n:"Maroon",v:"#5d232f"}, {n:"Cardinal Red",v:"#8a1e2b"}] }, 
+                "18500 (Hoodie)": { preset: "Comfort_Vintage_Hoodie", type: "hoodie", colors: [{n:"Black",v:"#111111"}, {n:"Sport Grey",v:"#a0a0a0"}, {n:"Navy",v:"#1a2a4c"}, {n:"Red",v:"#c41e3a"}, {n:"Royal",v:"#1560bd"}, {n:"Forest Green",v:"#113021"}, {n:"Maroon",v:"#5d232f"}, {n:"White",v:"#FFFFFF"}, {n:"Dark Heather",v:"#4f4f4f"}, {n:"Heliconia",v:"#db0b5e"}] },
+                "18600 (Zip Hoodie)": { preset: "Gildan_ZipHoodie_Boxy", type: "zip_hoodie", colors: [{n:"Black",v:"#111111"}, {n:"Sport Grey",v:"#a0a0a0"}, {n:"Navy",v:"#1a2a4c"}, {n:"Red",v:"#c41e3a"}, {n:"Royal",v:"#1560bd"}, {n:"Forest Green",v:"#113021"}, {n:"Maroon",v:"#5d232f"}, {n:"Graphite Heather",v:"#676767"}] }
+            },
+            "Bella+Canvas": {
+                "3001 (Fitted)": { preset: "Bella_Fitted_SS", type: "tshirt", colors: [{n:"White",v:"#FFFFFF"}, {n:"Black",v:"#111111"}, {n:"Asphalt",v:"#4a4a4a"}, {n:"Olive",v:"#5a633d"}, {n:"True Royal",v:"#2a5baf"}, {n:"Mint",v:"#98d9c2"}, {n:"Mauve",v:"#a67e83"}, {n:"Peach",v:"#f1beaa"}, {n:"Dusty Blue",v:"#6f8aa3"}, {n:"Mustard",v:"#d6b35d"}, {n:"Storm",v:"#58595b"}, {n:"Team Purple",v:"#470a68"}] },
+                "3501 (Long Sleeve)": { preset: "Bella_Fitted_LS", type: "longsleeve", colors: [{n:"White",v:"#FFFFFF"}, {n:"Black",v:"#111111"}, {n:"Dark Grey Heather",v:"#53565A"}, {n:"Navy",v:"#1a2a4c"}, {n:"Cardinal",v:"#8a1e2b"}, {n:"Military Green",v:"#4b5320"}, {n:"Deep Heather",v:"#6d6e71"}] }
+            },
+            "Comfort Colors": {
+                "1717 (Vintage)": { preset: "Comfort_Vintage_SS", type: "tshirt", colors: [{n:"Pepper",v:"#424143"}, {n:"Blue Jean",v:"#527699"}, {n:"Chalky Mint",v:"#b6d1c2"}, {n:"Butter",v:"#fcf8d4"}, {n:"Watermelon",v:"#f1616c"}, {n:"Orchid",v:"#b185a7"}, {n:"Flo Blue",v:"#4f758b"}, {n:"Seafoam",v:"#7da290"}, {n:"Yam",v:"#bd5631"}, {n:"Berry",v:"#80304c"}, {n:"Crunchberry",v:"#8A3324"}, {n:"Willow",v:"#828972"}] },
+                "1566 (Hoodie)": { preset: "Comfort_Vintage_Hoodie", type: "hoodie", colors: [{n:"Pepper",v:"#424143"}, {n:"Blue Jean",v:"#527699"}, {n:"Crunchberry",v:"#8A3324"}, {n:"Willow",v:"#828972"}, {n:"Seafoam",v:"#7da290"}, {n:"Grey",v:"#808080"}] }
+            }
+        };
+
+        const printZones = {
+            "tshirt": {
+                "Front Center": { pos: new THREE.Vector3(0, 0.35, 0.14), rot: new THREE.Euler(0, 0, 0), scale: 1.0 },
+                "Back Center": { pos: new THREE.Vector3(0, 0.35, -0.14), rot: new THREE.Euler(0, Math.PI, 0), scale: 1.0 },
+                "Left Chest": { pos: new THREE.Vector3(0.1, 0.35, 0.13), rot: new THREE.Euler(0, 0, 0), scale: 0.4 },
+                "Right Chest": { pos: new THREE.Vector3(-0.1, 0.35, 0.13), rot: new THREE.Euler(0, 0, 0), scale: 0.4 },
+                "Left Sleeve": { pos: new THREE.Vector3(0.45, 0.30, 0.05), rot: new THREE.Euler(0, Math.PI/2, 0), scale: 0.5 },
+                "Right Sleeve": { pos: new THREE.Vector3(-0.45, 0.30, 0.05), rot: new THREE.Euler(0, -Math.PI/2, 0), scale: 0.5 },
+                "Nape": { pos: new THREE.Vector3(0, 0.42, -0.14), rot: new THREE.Euler(0, Math.PI, 0), scale: 0.3 }
+            },
+            "hoodie": {
+                "Front Center": { pos: new THREE.Vector3(0, 0.28, 0.18), rot: new THREE.Euler(0, 0, 0), scale: 1.0 }, 
+                "Back Center": { pos: new THREE.Vector3(0, 0.3, -0.18), rot: new THREE.Euler(0, Math.PI, 0), scale: 1.0 },
+                "Left Chest": { pos: new THREE.Vector3(0.1, 0.32, 0.17), rot: new THREE.Euler(0, 0, 0), scale: 0.4 },
+                "Right Chest": { pos: new THREE.Vector3(-0.1, 0.32, 0.17), rot: new THREE.Euler(0, 0, 0), scale: 0.4 },
+                "Left Sleeve": { pos: new THREE.Vector3(0.5, 0.3, 0.1), rot: new THREE.Euler(0, Math.PI/2, 0), scale: 0.5 },
+                "Right Sleeve": { pos: new THREE.Vector3(-0.5, 0.3, 0.1), rot: new THREE.Euler(0, -Math.PI/2, 0), scale: 0.5 },
+                "Nape": { pos: new THREE.Vector3(0, 0.42, -0.18), rot: new THREE.Euler(0, Math.PI, 0), scale: 0.3 }
+            },
+            "longsleeve": {
+                "Front Center": { pos: new THREE.Vector3(0, 0.35, 0.14), rot: new THREE.Euler(0, 0, 0), scale: 1.0 },
+                "Left Sleeve": { pos: new THREE.Vector3(0.5, 0.1, 0.0), rot: new THREE.Euler(0, Math.PI/2, 0), scale: 0.8 },
+                "Right Sleeve": { pos: new THREE.Vector3(-0.5, 0.1, 0.0), rot: new THREE.Euler(0, -Math.PI/2, 0), scale: 0.8 },
+                "Back Center": { pos: new THREE.Vector3(0, 0.35, -0.14), rot: new THREE.Euler(0, Math.PI, 0), scale: 1.0 }
+            },
+            "zip_hoodie": {
+                "Left Chest": { pos: new THREE.Vector3(0.1, 0.32, 0.18), rot: new THREE.Euler(0, 0, 0), scale: 0.35 },
+                "Right Chest": { pos: new THREE.Vector3(-0.1, 0.32, 0.18), rot: new THREE.Euler(0, 0, 0), scale: 0.35 },
+                "Back Center": { pos: new THREE.Vector3(0, 0.3, -0.18), rot: new THREE.Euler(0, Math.PI, 0), scale: 1.0 },
+                "Left Sleeve": { pos: new THREE.Vector3(0.5, 0.3, 0.1), rot: new THREE.Euler(0, Math.PI/2, 0), scale: 0.5 },
+                "Right Sleeve": { pos: new THREE.Vector3(-0.5, 0.3, 0.1), rot: new THREE.Euler(0, -Math.PI/2, 0), scale: 0.5 },
+                "Nape": { pos: new THREE.Vector3(0, 0.42, -0.18), rot: new THREE.Euler(0, Math.PI, 0), scale: 0.3 }
+            }
+        };
+
+        let scene, camera, renderer, controls;
+        let currentModel, garmentMaterial, noiseTexture, fabricNormalMap;
+        let layers = []; 
+        let activeLayerId = null;
+        let activeGarment = { brand: null, style: null, color: null, preset: null, type: 'tshirt', availableColors: [] };
+        let selectedApprovalColors = new Set(); 
+        
+        let defaultCameraPosition = new THREE.Vector3(0, 0.2, 1.3); 
+        let defaultTarget = new THREE.Vector3(0, 0.15, 0);
+        
+        const els = {
+            brand: document.getElementById('brand-select'),
+            style: document.getElementById('style-select'),
+            colors: document.getElementById('color-swatches'),
+            fileInput: document.getElementById('file-input'),
+            layerList: document.getElementById('layer-list-container'),
+            floatingEditor: document.getElementById('floating-editor'),
+            floatingTitle: document.getElementById('floating-editor-title'),
+            noLayerMsg: document.getElementById('no-layer-msg'),
+            closeEditor: document.getElementById('close-editor-btn'),
+            deleteLayer: document.getElementById('delete-layer-btn'),
+            zoneSelect: document.getElementById('print-zone-select'),
+            loader: document.getElementById('loader'),
+            po: document.getElementById('po-number'),
+            customer: document.getElementById('customer-name'),
+            approvalColors: document.getElementById('approval-color-select'),
+            approvalFloatingColors: document.getElementById('approval-floating-colors'),
+            approvalColorsList: document.getElementById('approval-colors-list'),
+            layerPrintSize: document.getElementById('layer-print-size'),
+            sliders: {
+                scale: document.getElementById('slider-scale'),
+                x: document.getElementById('slider-x'),
+                y: document.getElementById('slider-y'),
+                rot: document.getElementById('slider-rot')
+            },
+            vals: {
+                scale: document.getElementById('val-scale'),
+                x: document.getElementById('val-x'),
+                y: document.getElementById('val-y'),
+                rot: document.getElementById('val-rot')
+            },
+            approval: {
+                btn: document.getElementById('approval-mode-btn'),
+                overlay: document.getElementById('approval-overlay'),
+                exit: document.getElementById('exit-approval-btn'),
+                viewerTarget: document.getElementById('approval-viewer-target'),
+                editorControls: document.getElementById('editor-controls'),
+                viewerWrapper: document.getElementById('portable-viewer-module'),
+                meta: document.getElementById('approval-meta'),
+                colorsList: document.getElementById('approval-colors-list'), 
+                signerName: document.getElementById('signer-name'),
+                signerDate: document.getElementById('signer-date'),
+                finalBtn: document.getElementById('final-sign-btn'),
+                emailBtn: document.getElementById('email-approval-btn'),
+                zoom: document.getElementById('view-zoom-slider') 
+            },
+            viewControls: {
+                slider: document.getElementById('view-zoom-slider'),
+                in: document.getElementById('zoom-in-btn'),
+                out: document.getElementById('zoom-out-btn'),
+                reset: document.getElementById('reset-view-btn'),
+                rotate: document.getElementById('rotate-toggle-btn')
+            }
+        };
+
+        function createNoiseTexture() {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(0,0,size,size);
+            
+            const imageData = ctx.getImageData(0,0,size,size);
+            const data = imageData.data;
+            for(let i=0; i < data.length; i+=4) {
+                const noise = (Math.random() - 0.5) * 30;
+                data[i] += noise;
+                data[i+1] += noise;
+                data[i+2] += noise;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(4, 4);
+            return tex;
+        }
+
+        function createFabricNormalMap() {
+             const size = 512;
+             const canvas = document.createElement('canvas');
+             canvas.width = size;
+             canvas.height = size;
+             const ctx = canvas.getContext('2d');
+             
+             ctx.fillStyle = '#8080ff'; 
+             ctx.fillRect(0,0,size,size);
+             
+             for(let i=0; i<size; i+=4) {
+                 ctx.strokeStyle = 'rgba(140, 140, 255, 0.2)';
+                 ctx.beginPath();
+                 ctx.moveTo(i, 0); ctx.lineTo(i, size);
+                 ctx.stroke();
+                 ctx.beginPath();
+                 ctx.moveTo(0, i); ctx.lineTo(size, i);
+                 ctx.stroke();
+             }
+             
+             const tex = new THREE.CanvasTexture(canvas);
+             tex.wrapS = THREE.RepeatWrapping;
+             tex.wrapT = THREE.RepeatWrapping;
+             tex.repeat.set(10, 10);
+             return tex;
+        }
+
+        function init() {
+            const container = document.getElementById('viewer-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1e242c);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            backLight.position.set(-5, 5, -10);
+            scene.add(backLight);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.copy(defaultCameraPosition);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.1;
+            controls.minDistance = 0.4;
+            controls.maxDistance = 3;
+            controls.zoomSpeed = 0.3; 
+            controls.rotateSpeed = 0.7;
+            controls.target.copy(defaultTarget);
+            controls.enablePan = true; 
+
+            noiseTexture = createNoiseTexture();
+            fabricNormalMap = createFabricNormalMap();
+
+            populateBrands();
+            setupEventListeners();
+            
+            animate();
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function addLayer(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const tex = new THREE.Texture(img);
+                    tex.needsUpdate = true;
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    
+                    const id = Date.now();
+                    const zones = printZones[activeGarment.type] || printZones['tshirt'];
+                    const zoneName = "Front Center";
+                    const zone = zones[zoneName];
+
+                    const helper = new THREE.Object3D();
+                    helper.position.copy(zone.pos);
+                    helper.rotation.copy(zone.rot);
+                    scene.add(helper);
+
+                    const aspect = tex.image.width / tex.image.height;
+                    const width = 0.25;
+                    const size = new THREE.Vector3(width, width / aspect, 0.2);
+
+                    const layer = {
+                        id, name: file.name, texture: tex, helper, mesh: new THREE.Group(), 
+                        size, zone: zoneName, thumb: e.target.result,
+                        params: { scale: 1.0, x: 0.0, y: 0.0, rot: 0.0 },
+                        realDimensions: "Pending..."
+                    };
+                    
+                    layers.push(layer);
+                    scene.add(layer.mesh);
+                    updateDecal(layer);
+                    selectLayer(id);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function updateLayerRealSize(layer) {
+            if (!currentModel) return;
+            // Get model height in 3D units
+            const box = new THREE.Box3().setFromObject(currentModel);
+            const height = box.max.y - box.min.y; 
+            
+            // Assume Generic/Gildan Medium is 74cm (approx 29") tall
+            const cmPerUnit = REAL_GARMENT_HEIGHT_CM / height;
+            
+            // Calculate decal size in 3D units (size * scale)
+            // layer.size.x is the width in 3D units at scale 1.0
+            const decalWidth3D = layer.size.x * layer.params.scale;
+            // Aspect ratio preserved, so height follows
+            const decalHeight3D = layer.size.y * layer.params.scale;
+            
+            const widthCm = (decalWidth3D * cmPerUnit).toFixed(1);
+            const heightCm = (decalHeight3D * cmPerUnit).toFixed(1);
+            
+            // Convert to Inches (approx)
+            const widthIn = (widthCm / 2.54).toFixed(1);
+            const heightIn = (heightCm / 2.54).toFixed(1);
+            
+            // UPDATED FORMAT: Width cm x Height cm / Width" x Height"
+            layer.realDimensions = `${widthCm}cm x ${heightCm}cm / ${widthIn}" x ${heightIn}"`;
+            
+            // Update UI if active
+            if(activeLayerId === layer.id && els.layerPrintSize) {
+                els.layerPrintSize.innerText = layer.realDimensions;
+            }
+        }
+
+        function selectLayer(id) {
+            activeLayerId = id;
+            renderLayerList();
+            if (id) {
+                const layer = layers.find(l => l.id === id);
+                if (layer) {
+                    els.floatingEditor.classList.add('active');
+                    els.noLayerMsg.classList.add('hidden');
+                    
+                    // Set Title
+                    els.floatingTitle.innerText = `Editing: ${layer.zone}`;
+
+                    // Populate Floating Editor
+                    els.zoneSelect.innerHTML = '';
+                    const zones = printZones[activeGarment.type] || printZones['tshirt'];
+                    Object.keys(zones).forEach(z => els.zoneSelect.add(new Option(z, z)));
+                    els.zoneSelect.value = layer.zone;
+                    
+                    els.sliders.scale.value = layer.params.scale;
+                    els.sliders.x.value = layer.params.x;
+                    els.sliders.y.value = layer.params.y;
+                    els.sliders.rot.value = layer.params.rot;
+                    updateSliderVals();
+                    updateLayerRealSize(layer);
+                }
+            } else {
+                els.floatingEditor.classList.remove('active');
+                if(layers.length === 0) els.noLayerMsg.classList.remove('hidden');
+            }
+        }
+
+        function removeLayer(id) {
+            const layer = layers.find(l => l.id === id);
+            if (layer) {
+                scene.remove(layer.mesh); scene.remove(layer.helper);
+                layers = layers.filter(l => l.id !== id);
+                selectLayer(null);
+            }
+        }
+
+        function setLayerZone(zoneName) {
+            if (!activeLayerId) return;
+            const layer = layers.find(l => l.id === activeLayerId);
+            const zone = printZones[activeGarment.type][zoneName];
+            if (layer && zone) {
+                layer.zone = zoneName;
+                layer.helper.position.copy(zone.pos);
+                layer.helper.rotation.copy(zone.rot);
+                layer.params.x = 0; layer.params.y = 0; layer.params.rot = 0;
+                els.sliders.x.value = 0; els.sliders.y.value = 0; els.sliders.rot.value = 0;
+                updateSliderVals();
+                updateDecal(layer);
+                renderLayerList();
+                // Update title
+                els.floatingTitle.innerText = `Editing: ${layer.zone}`;
+                // Automatically rotate camera to view the new zone
+                rotateToZone(zoneName);
+            }
+        }
+        
+        // Helper function to rotate camera to a zone
+        function rotateToZone(zoneName) {
+            const offset = 1.5;
+            const targetY = 0.2;
+            
+            // Reset zoom slightly
+            controls.object.zoom = 1;
+            controls.object.updateProjectionMatrix();
+            
+            // Default positions based on zone type
+            if (zoneName.includes("Front")) {
+                camera.position.set(0, targetY, offset);
+            } else if (zoneName.includes("Back") || zoneName.includes("Nape")) {
+                camera.position.set(0, targetY, -offset);
+            } else if (zoneName.includes("Left Sleeve") || zoneName.includes("Left Chest")) {
+                camera.position.set(offset, targetY, 0.5); 
+            } else if (zoneName.includes("Right Sleeve") || zoneName.includes("Right Chest")) {
+                camera.position.set(-offset, targetY, 0.5);
+            }
+            
+            controls.target.set(0, 0.15, 0);
+            controls.update();
+        }
+
+        function updateDecal(layer) {
+            layer.mesh.clear();
+            const width = layer.size.x * layer.params.scale;
+            const height = layer.size.y * layer.params.scale;
+            const depth = 0.2; 
+            const decalSize = new THREE.Vector3(width, height, depth);
+            const localOffset = new THREE.Vector3(layer.params.x, layer.params.y, 0);
+            localOffset.applyEuler(layer.helper.rotation);
+            const finalPos = layer.helper.position.clone().add(localOffset);
+            const finalRot = layer.helper.rotation.clone();
+            finalRot.z += layer.params.rot * (Math.PI/180); 
+            const mat = new THREE.MeshStandardMaterial({
+                map: layer.texture,
+                transparent: true, depthTest: true, depthWrite: false,
+                polygonOffset: true, polygonOffsetFactor: -4, roughness: 0.5
+            });
+
+            if (currentModel) {
+                currentModel.traverse(child => {
+                    if (child.isMesh) {
+                        const geo = new DecalGeometry(child, finalPos, finalRot, decalSize);
+                        const m = new THREE.Mesh(geo, mat);
+                        layer.mesh.add(m);
+                    }
+                });
+            }
+            
+            // Update calculated size
+            updateLayerRealSize(layer);
+        }
+
+        function handleSliderChange() {
+            if (!activeLayerId) return;
+            const layer = layers.find(l => l.id === activeLayerId);
+            if(layer) {
+                layer.params.scale = parseFloat(els.sliders.scale.value);
+                layer.params.x = parseFloat(els.sliders.x.value);
+                layer.params.y = parseFloat(els.sliders.y.value);
+                layer.params.rot = parseFloat(els.sliders.rot.value);
+                updateSliderVals();
+                updateDecal(layer);
+            }
+        }
+
+        function updateSliderVals() {
+             els.vals.scale.innerText = els.sliders.scale.value;
+             els.vals.x.innerText = els.sliders.x.value;
+             els.vals.y.innerText = els.sliders.y.value;
+             els.vals.rot.innerText = els.sliders.rot.value + '°';
+        }
+
+        function renderLayerList() {
+            els.layerList.innerHTML = '';
+            layers.forEach(layer => {
+                const div = document.createElement('div');
+                div.className = `layer-card ${layer.id === activeLayerId ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="layer-card-thumb-box">
+                        <img src="${layer.thumb}" class="layer-card-thumb">
+                    </div>
+                    <div class="layer-card-info">
+                        <div class="layer-card-zone">${layer.zone}</div>
+                    </div>
+                `;
+                div.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    selectLayer(layer.id);
+                    rotateToZone(layer.zone);
+                };
+                els.layerList.appendChild(div);
+            });
+        }
+
+        function loadGarment(data) {
+            els.loader.style.display = 'block'; 
+            if (currentModel) scene.remove(currentModel);
+            
+            // MODIFIED: Do NOT clear layers. Re-project them onto new model.
+            // layers.forEach(l => removeLayer(l.id)); 
+
+            let url = data.file ? SERVER_PATH + data.file : SERVER_PATH + `TShirt_${data.preset}_LOD0.glb`;
+
+            new GLTFLoader().load(url, (gltf) => {
+                try {
+                    currentModel = gltf.scene;
+                    const box = new THREE.Box3().setFromObject(currentModel);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 0.9 / maxDim; 
+                    currentModel.scale.set(scale, scale, scale);
+                    currentModel.position.sub(center.multiplyScalar(scale)); 
+                    currentModel.position.y += 0.15;
+
+                    garmentMaterial = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(activeGarment.color || 0xffffff),
+                        roughness: 0.7, 
+                        metalness: 0.05, 
+                        side: THREE.DoubleSide,
+                        normalMap: fabricNormalMap, // Added texture
+                        normalScale: new THREE.Vector2(0.2, 0.2)
+                    });
+                    
+                    // Re-apply current color/heather logic
+                    updateGarmentColor(activeGarment.color, activeGarment.colorName);
+
+                    currentModel.traverse(child => {
+                        if (child.isMesh) {
+                            child.material = garmentMaterial;
+                            child.castShadow = true; child.receiveShadow = true;
+                        }
+                    });
+
+                    scene.add(currentModel);
+                    populatePrintZones(activeGarment.type || 'tshirt');
+                    
+                    // Re-project existing layers onto the new model
+                    layers.forEach(layer => {
+                        const zones = printZones[activeGarment.type] || printZones['tshirt'];
+                        const zone = zones[layer.zone] || zones["Front Center"]; 
+                        
+                        layer.helper.position.copy(zone.pos);
+                        layer.helper.rotation.copy(zone.rot);
+                        
+                        updateDecal(layer);
+                    });
+
+                } catch(e) {
+                    console.error(e);
+                } finally {
+                    els.loader.style.display = 'none'; 
+                }
+            }, undefined, (err) => { 
+                console.error("Load Error", err); 
+                els.loader.style.display = 'none'; 
+            });
+        }
+        
+        function updateGarmentColor(hex, name) {
+            activeGarment.color = hex;
+            activeGarment.colorName = name || "";
+            
+            if (garmentMaterial) {
+                garmentMaterial.color.set(hex);
+                const isHeather = name && (name.includes("Heather") || name.includes("Ash") || name.includes("Sport Grey") || name.includes("Antique"));
+                
+                if(isHeather) {
+                    garmentMaterial.map = noiseTexture;
+                    garmentMaterial.needsUpdate = true;
+                } else {
+                    garmentMaterial.map = null;
+                    garmentMaterial.needsUpdate = true;
+                }
+            }
+        }
+
+        function populateBrands() {
+            els.brand.innerHTML = '';
+            Object.keys(garmentDatabase).forEach(brand => els.brand.add(new Option(brand, brand)));
+            onBrandChange();
+        }
+
+        function onBrandChange() {
+            const brand = els.brand.value;
+            els.style.innerHTML = '';
+            Object.keys(garmentDatabase[brand]).forEach(style => els.style.add(new Option(style, style)));
+            onStyleChange();
+        }
+
+        function onStyleChange() {
+            const brand = els.brand.value;
+            const styleKey = els.style.value;
+            const data = garmentDatabase[brand][styleKey];
+            activeGarment = { brand, style: styleKey, preset: data.preset, type: data.type, color: data.colors[0].v, colorName: data.colors[0].n, availableColors: data.colors };
+            selectedApprovalColors.clear();
+
+            els.colors.innerHTML = '';
+            data.colors.forEach((c, i) => {
+                const div = document.createElement('div');
+                div.className = `w-6 h-6 rounded-full cursor-pointer border border-gray-600 ${i===0?'ring-2 ring-blue-500':''}`;
+                div.style.backgroundColor = c.v;
+                div.title = c.n;
+                if(c.v.toLowerCase() === '#ffffff') div.classList.add('border-gray-400');
+                div.onclick = () => {
+                    Array.from(els.colors.children).forEach(ch => ch.classList.remove('ring-2', 'ring-blue-500'));
+                    div.classList.add('ring-2', 'ring-blue-500');
+                    updateGarmentColor(c.v, c.n);
+                };
+                els.colors.appendChild(div);
+            });
+            
+            // Render Swatches with Double-Click logic
+            const colorDiv = document.createElement('div'); 
+            // Using same data, but re-render logic moved to onStyleChange to refresh
+            // Wait, the above loop handles the main editor swatches.
+            // We need the logic for "double click to approve".
+            
+            // Re-render main editor swatches with new logic
+            els.colors.innerHTML = '';
+            data.colors.forEach(c => {
+                const btn = document.createElement('div');
+                btn.className = "color-swatch-btn";
+                btn.style.backgroundColor = c.v;
+                btn.title = `${c.n} (Double-click to Approve)`;
+                
+                // Single Click: Preview
+                btn.onclick = () => {
+                    // Reset blue rings
+                    Array.from(els.colors.children).forEach(b => b.classList.remove('active-preview'));
+                    btn.classList.add('active-preview');
+                    updateGarmentColor(c.v, c.n);
+                };
+                
+                // Double Click: Approve
+                btn.ondblclick = () => {
+                    if (selectedApprovalColors.has(c.n)) {
+                        selectedApprovalColors.delete(c.n);
+                        btn.classList.remove('active-approved');
+                    } else {
+                        selectedApprovalColors.add(c.n);
+                        btn.classList.add('active-approved');
+                    }
+                };
+                
+                els.colors.appendChild(btn);
+            });
+            
+            // Set initial active
+            if(els.colors.children.length > 0) {
+                 els.colors.children[0].classList.add('active-preview');
+            }
+
+            loadGarment(data);
+        }
+
+        function populatePrintZones(type) {
+            els.zoneSelect.innerHTML = '';
+            Object.keys(printZones[type] || printZones['tshirt']).forEach(z => els.zoneSelect.add(new Option(z, z)));
+        }
+
+        function resetView(mode = 'editor') {
+            controls.reset();
+            if (mode === 'approval') {
+                camera.position.set(0, 0.2, 1.2); 
+                controls.target.set(0, 0.15, 0);
+            } else {
+                camera.position.copy(defaultCameraPosition);
+                controls.target.copy(defaultTarget);
+            }
+            controls.update();
+            if(els.viewControls.slider) els.viewControls.slider.value = 1;
+        }
+
+        function updateZoom(zoomVal) {
+             const baseDist = 1.2; 
+             const newDist = baseDist / zoomVal;
+             const dir = camera.position.clone().sub(controls.target).normalize();
+             camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+             controls.update();
+        }
+
+        function setupEventListeners() {
+            els.brand.onchange = onBrandChange;
+            els.style.onchange = onStyleChange;
+            els.fileInput.onchange = (e) => { if (e.target.files.length) addLayer(e.target.files[0]); els.fileInput.value = ""; };
+            els.deleteLayer.onclick = () => { if(activeLayerId) removeLayer(activeLayerId); };
+            els.closeEditor.onclick = () => selectLayer(null);
+            els.zoneSelect.onchange = (e) => { setLayerZone(e.target.value); };
+
+            ['scale', 'x', 'y', 'rot'].forEach(k => {
+                els.sliders[k].addEventListener('input', handleSliderChange);
+            });
+
+            const viewSlider = els.viewControls.slider;
+            viewSlider.addEventListener('input', (e) => updateZoom(parseFloat(e.target.value)));
+
+            els.viewControls.in.onclick = () => {
+                viewSlider.value = Math.min(parseFloat(viewSlider.value) + 0.1, 3);
+                updateZoom(parseFloat(viewSlider.value));
+            };
+            els.viewControls.out.onclick = () => {
+                viewSlider.value = Math.max(parseFloat(viewSlider.value) - 0.1, 0.5);
+                updateZoom(parseFloat(viewSlider.value));
+            };
+            els.viewControls.reset.onclick = () => resetView('editor');
+            els.viewControls.rotate.onclick = () => controls.autoRotate = !controls.autoRotate;
+
+            els.approval.zoom.addEventListener('input', (e) => {
+                 const val = parseFloat(e.target.value);
+                 const newDist = 1.2 / val; 
+                 const dir = camera.position.clone().sub(controls.target).normalize();
+                 camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+                 controls.update();
+            });
+
+            els.approval.btn.onclick = () => {
+                selectLayer(null);
+                document.getElementById('approval-overlay').classList.remove('hidden');
+                const target = document.getElementById('approval-viewer-target');
+                target.appendChild(document.getElementById('portable-viewer-module'));
+                resetView('approval');
+                
+                // FORCE SHOW: Floating Color Menu (Added explicit display block and class removal)
+                els.approvalFloatingColors.classList.remove('hidden');
+                els.approvalFloatingColors.style.display = 'block'; 
+                
+                let metaHtml = `
+                    <div class="flex justify-between py-1 border-b border-gray-700"><span>Garment:</span> <span class="text-white">${activeGarment.brand} ${activeGarment.style}</span></div>
+                    <div class="flex justify-between py-1 border-b border-gray-700"><span>PO #:</span> <span class="text-white">${els.po.value || 'N/A'}</span></div>
+                    <div class="flex justify-between py-1 border-b border-gray-700"><span>Customer:</span> <span class="text-white">${els.customer.value || 'N/A'}</span></div>
+                    <div class="mt-4 font-bold text-white">Locations:</div>
+                    ${layers.map(l => `
+                        <div class="flex items-center gap-2 py-1 border-b border-gray-700 cursor-pointer hover:bg-gray-800 px-1 rounded" onclick="rotateToZoneInApproval('${l.zone}')">
+                             <img src="${l.thumb}" class="w-6 h-6 object-contain bg-gray-700 rounded">
+                             <span class="text-xs text-gray-400">${l.zone}</span>
+                             <span class="text-[10px] text-blue-400 ml-auto">${l.realDimensions || ''}</span>
+                        </div>
+                    `).join('')}
+                `;
+                els.approval.meta.innerHTML = metaHtml;
+                
+                // Setup click handlers for the new HTML elements
+                window.rotateToZoneInApproval = (zone) => rotateToZone(zone);
+
+                const list = els.approval.colorsList;
+                list.innerHTML = "";
+                const colorsToDisplay = activeGarment.availableColors.filter(c => selectedApprovalColors.has(c.n));
+                
+                if(colorsToDisplay.length === 0) {
+                    list.innerHTML = '<div class="text-xs text-yellow-500 italic">No specific colors selected for approval.</div>';
+                }
+
+                colorsToDisplay.forEach(c => {
+                    const row = document.createElement('div');
+                    row.className = "approval-swatch-row";
+                    if(activeGarment.color === c.v) row.classList.add('active');
+
+                    row.innerHTML = `
+                        <input type="checkbox" class="approval-checkbox" value="${c.n}" checked>
+                        <div class="approval-swatch-circle" style="background-color:${c.v}" title="${c.n}"></div>
+                        <span class="text-sm text-gray-300 flex-1">${c.n}</span>
+                    `;
+                    
+                    // Click logic
+                    row.onclick = (e) => {
+                        if(e.target.type === 'checkbox') return;
+                        list.querySelectorAll('.approval-swatch-row').forEach(r => r.classList.remove('active'));
+                        row.classList.add('active');
+                        updateGarmentColor(c.v, c.n);
+                    };
+                    
+                    list.appendChild(row);
+                });
+
+                onWindowResize();
+            };
+            
+            els.approval.exit.onclick = () => {
+                document.getElementById('approval-overlay').classList.add('hidden');
+                document.getElementById('viewer-column').appendChild(document.getElementById('portable-viewer-module'));
+                // Hide Floating Colors
+                els.approvalFloatingColors.classList.add('hidden');
+                els.approvalFloatingColors.style.display = 'none';
+                resetView('editor');
+                onWindowResize();
+            };
+            els.approval.finalBtn.onclick = generatePDF;
+            els.approval.emailBtn.onclick = () => {
+                const subject = `Approval Request: ${activeGarment.brand} ${activeGarment.style} - PO# ${els.po.value || 'N/A'}`;
+                const body = `Please review the attached Tech Pack for the ${activeGarment.brand} ${activeGarment.style} order.\n\nCustomer: ${els.customer.value}\nPO Number: ${els.po.value}`;
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                generatePDF(); // Also trigger download so they can attach it
+            };
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('viewer-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function generatePDF() {
+            const doc = new jsPDF();
+            
+            // -- HEADER --
+            doc.setFillColor(22, 27, 34); 
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255); 
+            doc.setFontSize(22); 
+            doc.text("ElevatedColorLab", 15, 20);
+            doc.setFontSize(12); 
+            doc.text("Digital Mockup Approval", 15, 30);
+            
+            // -- 3D RENDER --
+            renderer.render(scene, camera);
+            const imgData = renderer.domElement.toDataURL('image/png');
+            
+            const canvasWidth = renderer.domElement.width;
+            const canvasHeight = renderer.domElement.height;
+            const ratio = canvasHeight / canvasWidth;
+            
+            const pdfImageWidth = 100; // fixed width on page
+            const pdfImageHeight = pdfImageWidth * ratio; // calculated height
+            
+            // Snapshot Mode: Temporarily zoom in to crop dead space
+            // In a real app we'd move camera closer and render offscreen, 
+            // but here let's rely on the aspect ratio calculation to fit it nicely.
+            
+            // Use standard image placement
+            doc.addImage(imgData, 'PNG', 15, 50, pdfImageWidth, pdfImageHeight);
+            
+            // -- ORDER DETAILS --
+            // Move order details to right side of page to balance layout if image is tall
+            const detailsX = 125;
+            
+            doc.setTextColor(0);
+            let y = 55;
+            doc.setFontSize(14);
+            doc.text("Order Details", detailsX, y);
+            y += 8;
+            doc.setFontSize(10);
+            doc.text(`PO Number: ${els.po.value || 'N/A'}`, detailsX, y); y+=6;
+            doc.text(`Customer: ${els.customer.value || 'N/A'}`, detailsX, y); y+=6;
+            doc.text(`Garment: ${activeGarment.brand} ${activeGarment.style}`, detailsX, y); y+=6;
+            // Note: We could list approved colors here if needed
+            
+            y += 10;
+            doc.setFontSize(14);
+            doc.text("Print Locations", detailsX, y);
+            y += 8;
+            doc.setFontSize(10);
+            layers.forEach(l => { 
+                doc.text(`- ${l.zone}: ${l.name}`, detailsX, y); 
+                // Include dimensions line
+                if(l.realDimensions) {
+                    y+=4;
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`  Size: ${l.realDimensions}`, detailsX + 2, y);
+                    doc.setFontSize(10);
+                    doc.setTextColor(0);
+                }
+                y+=6; 
+            });
+
+            // -- APPROVED COLORS GRID --
+            // Calculate start Y based on whichever column (image or text) is taller
+            let tableY = Math.max(50 + pdfImageHeight + 10, y + 10); 
+            
+            const approvedColors = Array.from(document.querySelectorAll('.approval-checkbox:checked')).map(c => ({ 
+                name: c.value, 
+                hex: activeGarment.availableColors.find(ac => ac.n === c.value)?.v || "#FFFFFF" 
+            }));
+            
+            if (approvedColors.length > 0) {
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text("Approved Garment Colors", 15, tableY);
+                tableY += 8;
+                
+                // Draw Custom Color Grid
+                const boxSize = 8;
+                const labelOffset = 12;
+                let xPos = 15;
+                
+                approvedColors.forEach((c, index) => {
+                    // Draw Rect
+                    doc.setFillColor(c.hex);
+                    doc.setDrawColor(0);
+                    doc.rect(xPos, tableY, boxSize, boxSize, 'FD'); // Fill and Draw border
+                    
+                    // Draw Label
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(c.name, xPos + labelOffset, tableY + 6);
+                    
+                    // Grid logic (e.g., 4 per row)
+                    if ((index + 1) % 4 === 0) {
+                        xPos = 15;
+                        tableY += 12;
+                    } else {
+                        xPos += 45; 
+                    }
+                });
+                tableY += 20; // Buffer after grid
+            } else {
+                tableY += 15;
+            }
+            
+            // -- COMPREHENSIVE DISCLAIMER --
+            // Check page break
+            if (tableY > 240) {
+                doc.addPage();
+                tableY = 20;
+            }
+
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text("TERMS & CONDITIONS OF APPROVAL", 15, tableY);
+            tableY += 6;
+            
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'normal');
+            const disclaimerText = 
+                "1. VISUAL REPRESENTATION: This is a computer-generated approximation. Actual garment/ink colors may vary slightly.\n" +
+                "2. SPELLING & ARTWORK: Please verify all spelling, grammar, and design details. We are not responsible for errors in approved artwork.\n" +
+                "3. SIZING & PLACEMENT: Design size/placement is for visual reference. Standard tolerance is ±0.5\". Designs may be scaled proportionally by size.\n" +
+                "4. APPROVAL: Your signature constitutes final approval. Changes after this point may incur fees.";
+            
+            const splitDisclaimer = doc.splitTextToSize(disclaimerText, 180);
+            doc.text(splitDisclaimer, 15, tableY);
+            tableY += (splitDisclaimer.length * 4) + 10; // Adjust spacing based on lines
+
+            // -- SIGNATURE BOX --
+            doc.setDrawColor(150);
+            doc.setLineWidth(0.5);
+            doc.rect(15, tableY, 180, 25); // Box
+            
+            doc.setFontSize(10); 
+            doc.text(`Signed By: ${document.getElementById('signer-name').value}`, 20, tableY + 10);
+            doc.text(`Date: ${document.getElementById('signer-date').value}`, 120, tableY + 10);
+            doc.text("Signature: __________________________", 20, tableY + 20);
+            
+            doc.save('ECL_TechPack.pdf');
+        }
+
+        init();
+    </script>
+</body>
+</html>
