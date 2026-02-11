@@ -31,7 +31,7 @@ session_start();
 
 // --- Supabase Config ---
 $SUPABASE_URL = 'https://egbvlbqjlrvmtnbetxmy.supabase.co';
-$SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnYnZsYnFqbHJ2bXRuYmV0eG15Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODAwMzg5NSwiZXhwIjoyMDgzNTc5ODk1fQ.p-9GSVGIsmjT1al39qc2ZyEM2yraClIZmkLaMLRdlR8';
+$SUPABASE_KEY = ' ';
 
 $REST_URL = $SUPABASE_URL . '/rest/v1';
 $STORAGE_URL = $SUPABASE_URL . '/storage/v1/object';
