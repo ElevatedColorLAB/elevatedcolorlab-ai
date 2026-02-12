@@ -30,7 +30,7 @@ function send_json($data) {
 session_start();
 
 // --- Supabase Config ---
-$SUPABASE_URL = 'https://egbvlbqjlrvmtnbetxmy.supabase.co';
+$SUPABASE_URL = 'https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 $SUPABASE_KEY = ' ';
 
 $REST_URL = $SUPABASE_URL . '/rest/v1';
