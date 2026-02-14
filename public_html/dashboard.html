@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* [Previous CSS Preserved] */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f9fafb; }
+        .tool-card { background-color: #1f2937; border: 1px solid #374151; border-top: 3px solid transparent; border-radius: 0.75rem; transition: all 0.3s ease; overflow: hidden; }
+        .tool-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(37, 99, 235, 0.1); border-top-color: #2563eb; }
+        .new-request-pulse { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0%, 100% { border-top-color: #ef4444; } 50% { border-top-color: #f87171; } }
+    </style>
+    <script>
+        const token = sessionStorage.getItem('main_user_token');
+        const username = sessionStorage.getItem('main_user_username');
+        if (!token || !username) {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-[#1f2937] p-6 flex-shrink-0 flex flex-col">
+            <div class="flex items-center space-x-3 mb-10">
+                <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                    <i class="fas fa-layer-group text-white"></i>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-white">Elevated<span class="text-blue-500">ColorLab</span></span>
+            </div>
+            <nav class="space-y-2 flex-grow">
+                <a href="dashboard.html" class="flex items-center space-x-3 text-white bg-blue-600/20 border-l-2 border-blue-500 py-2 px-4 rounded-r-md">
+                    <i class="fas fa-tachometer-alt fa-fw text-blue-400"></i>
+                    <span class="font-semibold">Dashboard</span>
+                </a>
+                <a href="account.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-user-circle fa-fw"></i>
+                    <span>My Account</span>
+                </a>
+                <a href="community.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-comments fa-fw"></i>
+                    <span>Community</span>
+                </a>
+                <a href="about.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-info-circle fa-fw"></i>
+                    <span>About Us</span>
+                </a>
+                 <a href="sales_login.html" target="_blank" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-users fa-fw"></i>
+                    <span>Sales Portal</span>
+                </a>
+                <a href="beta_approvals.html" id="beta-approvals-link" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-user-check fa-fw"></i>
+                    <span>Beta Approvals</span>
+                </a>
+                <div class="relative pt-4 mt-4 border-t border-gray-700/50">
+                     <a href="#" class="flex items-center space-x-3 text-gray-400 opacity-50 cursor-not-allowed py-2 px-4 rounded-md">
+                        <i class="fas fa-calculator fa-fw"></i>
+                        <span>Link to QuickBooks</span>
+                    </a>
+                    <span class="absolute top-1/2 right-2 -translate-y-1/2 bg-green-800 text-green-200 text-xs font-bold px-2 py-0.5 rounded-full mt-2">Coming Soon</span>
+                </div>
+            </nav>
+            <a href="#" id="logout-button" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md mt-auto">
+                <i class="fas fa-sign-out-alt fa-fw"></i>
+                <span>Logout</span>
+            </a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 lg:p-12">
+            <h1 class="text-4xl font-bold text-white mb-2">Welcome Back, <span id="welcome-user">User</span>!</h1>
+            <p class="text-gray-400 mb-10">Select a tool to begin your workflow.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                
+                <a href="art_requests.html" id="art-requests-card" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-rose-600">
+                            <i class="fas fa-file-alt text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Art Requests</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Handle new artwork submissions.</p>
+                </a>
+
+                <a href="image_enhancements.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-amber-500">
+                            <i class="fas fa-wand-magic-sparkles text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">AI Image Enhancements</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Pre-flight and prepare images for production.</p>
+                </a>
+
+                <a href="mockup_generator_3d.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-teal-500">
+                            <i class="fas fa-tshirt text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">3D Mockup Generator</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Create realistic product mockups.</p>
+                </a>
+
+                <a href="separatorlab.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-indigo-500">
+                            <i class="fas fa-palette text-xl text-white"></i>
+                        </div>
+                        <!-- *** FIX: Changed "Separation Studio" to "Separation Lab" *** -->
+                        <h2 class="text-lg font-bold text-gray-200">Separation Lab</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">AI-powered color separations and RIP output.</p>
+                </a>
+                
+                <a href="embroidery.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-purple-500">
+                            <i class="fas fa-crosshairs text-xl text-white"></i>
+                        </div>
+                        <!-- *** FIX: Changed "Embroidery Studio" to "Embroidery Lab" *** -->
+                        <h2 class="text-lg font-bold text-gray-200">Embroidery Lab</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Automated digitization and stitch optimization.</p>
+                </a>
+                
+                <a href="dtf_studio.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-pink-600">
+                            <i class="fas fa-print text-xl text-white"></i>
+                        </div>
+                        <!-- *** FIX: Changed "DTF Studio" to "DTF Lab" *** -->
+                        <h2 class="text-lg font-bold text-gray-200">DTF Lab</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Direct-to-film processing and management.</p>
+                </a>
+
+                <a href="garment_label_creator.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-cyan-500">
+                            <i class="fas fa-tag text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Garment Label Creator</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Design and generate print-ready labels.</p>
+                </a>
+
+                <a href="production.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-orange-500">
+                            <i class="fas fa-cogs text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Production</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Manage and track production jobs.</p>
+                </a>
+
+                <a href="inventory.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-emerald-500">
+                            <i class="fas fa-boxes text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Inventory</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Manage ink, garments, and other supplies.</p>
+                </a>
+
+                <a href="reports.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-sky-500">
+                            <i class="fas fa-chart-line text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Reports</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">View production analytics and insights.</p>
+                </a>
+
+                <a href="tutorials.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-500">
+                            <i class="fas fa-book-open text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Tutorials & References</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Guides and resources for your tools.</p>
+                </a>
+                 <a href="community.html" class="tool-card p-6 block group">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-fuchsia-500">
+                            <i class="fas fa-comments text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-200">Community Hub</h2>
+                    </div>
+                    <p class="text-sm text-gray-400">Connect with other users and share feedback.</p>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('welcome-user').textContent = sessionStorage.getItem('main_user_username');
+
+            document.getElementById('logout-button').addEventListener('click', function() {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            });
+            
+            const userRole = sessionStorage.getItem('main_user_role');
+            const betaApprovalsLink = document.getElementById('beta-approvals-link');
+            if (userRole !== 'admin') {
+                betaApprovalsLink.style.display = 'none';
+            }
+
+            async function checkForNewArtRequests() {
+                try {
+                    const response = await fetch('/sales_api.php?action=get_requests');
+                    if (!response.ok) return;
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        const hasNew = result.data.some(req => req.status === 'New');
+                        const card = document.getElementById('art-requests-card');
+                        if (hasNew) { card.classList.add('new-request-pulse'); } 
+                        else { card.classList.remove('new-request-pulse'); }
+                    }
+                } catch (error) { console.error("Could not check for new art requests:", error); }
+            }
+            checkForNewArtRequests();
+            setInterval(checkForNewArtRequests, 15000);
+        });
+    </script>
+</body>
+</html>

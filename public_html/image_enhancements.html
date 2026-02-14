@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Enhancements | ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #f9fafb;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+        }
+        .btn { 
+            display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; 
+        }
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #374151; color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #059669; }
+        .btn.active {
+             background-color: #2563eb;
+             box-shadow: 0 0 0 2px #111827, 0 0 0 4px #2563eb;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .loader { width: 20px; height: 20px; border-radius: 50%; border: 3px solid #374151; border-top-color: #2563eb; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .canvas-container { border: 1px solid #374151; }
+        .form-select {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1f2937]/80 backdrop-blur-md border-b border-slate-700 flex-shrink-0">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0 flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"><i class="fas fa-layer-group text-white"></i></div>
+                        <span class="text-xl font-bold tracking-tight text-white">Elevated<span class="text-blue-500">ColorLab</span></span>
+                    </div>
+                     <div class="hidden md:block">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="dashboard.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="#" class="bg-gray-800 text-white px-3 py-2 rounded-md text-sm font-medium" aria-current="page">AI Enhancements</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden">
+        <!-- Left Column: Controls -->
+        <div class="lg-col-span-1 space-y-6 h-full overflow-y-auto pr-2">
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold mb-4">1. Upload Design</h2>
+                <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+            <div class="card p-6" id="image-details-card" style="display: none;">
+                <h2 class="text-lg font-semibold mb-4">Image Details</h2>
+                <div id="image-details" class="text-sm text-gray-300 space-y-2"></div>
+            </div>
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold mb-4">2. AI Analysis & Creative</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="output-process" class="block text-sm font-medium text-gray-400 mb-1">Output Process</label>
+                        <select id="output-process" class="form-select">
+                            <option value="screen_printing">Screen Printing</option>
+                            <option value="dtf">Direct-to-Film (DTF)</option>
+                            <option value="embroidery">Embroidery</option>
+                        </select>
+                    </div>
+                    <div class="space-y-3">
+                        <button id="analyze-btn" class="w-full btn btn-primary" disabled><i class="fas fa-wand-magic-sparkles mr-2"></i> Analyze Image</button>
+                        <button id="suggest-colors-btn" class="w-full btn btn-secondary" disabled>✨ Suggest Garment Colors</button>
+                    </div>
+                </div>
+                <div id="ai-results-container" class="mt-4 border-t border-gray-700 pt-4" style="display: none;">
+                     <select id="ai-results-select" class="form-select mb-3"></select>
+                     <div id="ai-results-display" class="text-sm text-gray-300 space-y-2"></div>
+                </div>
+            </div>
+             <div class="card p-6">
+                <h2 class="text-lg font-semibold mb-4">3. Enhancement Tools</h2>
+                 <div class="space-y-3">
+                    <button id="undo-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-undo mr-2"></i> Undo</button>
+                    <button id="crop-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-crop-alt mr-2"></i> Crop Image</button>
+                    <button id="bw-enhance-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-adjust mr-2"></i> Enhance B/W</button>
+                    <!-- *** EDITED: Removed "Simulate" from button text *** -->
+                    <button id="remove-bg-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-eraser mr-2"></i> Remove Background</button>
+                    <button id="upscale-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-expand mr-2"></i> Upscale</button>
+                    <button id="vectorize-btn" class="w-full btn btn-secondary" disabled><i class="fas fa-bezier-curve mr-2"></i> Vectorize</button>
+                    <button id="download-btn" class="w-full btn btn-success" disabled><i class="fas fa-download mr-2"></i> Download Image</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Preview -->
+        <div class="lg:col-span-2 card p-6 flex flex-col items-center justify-center overflow-hidden">
+            <div id="canvas-wrapper" class="w-full flex-1 flex items-center justify-center bg-gray-900/50 rounded-lg relative">
+                <canvas id="image-canvas"></canvas>
+                <p id="canvas-placeholder" class="text-gray-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">Upload an image to begin</p>
+            </div>
+             <div id="view-tools" class="mt-4 flex items-center justify-center space-x-2">
+                <button id="zoom-in-btn" class="btn btn-secondary" disabled><i class="fas fa-search-plus"></i></button>
+                <button id="zoom-out-btn" class="btn btn-secondary" disabled><i class="fas fa-search-minus"></i></button>
+                <button id="fit-screen-btn" class="btn btn-secondary" disabled><i class="fas fa-compress-arrows-alt"></i> Fit</button>
+                <button id="move-btn" class="btn btn-secondary" disabled><i class="fas fa-arrows-alt"></i> Move</button>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- *** NEW: Configuration for our secure api-proxy.php *** ---
+        const PROXY_URL = 'api-proxy.php';
+        const API_KEY = 'ElevatedColorLAB'; // This is the secret key for our VPS services
+
+        // --- DOM Elements ---
+        const imageUpload = document.getElementById('image-upload');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const suggestColorsBtn = document.getElementById('suggest-colors-btn');
+        const bwEnhanceBtn = document.getElementById('bw-enhance-btn');
+        const cropBtn = document.getElementById('crop-btn');
+        const removeBgBtn = document.getElementById('remove-bg-btn');
+        const upscaleBtn = document.getElementById('upscale-btn');
+        const vectorizeBtn = document.getElementById('vectorize-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const outputProcessSelect = document.getElementById('output-process');
+        const aiResultsContainer = document.getElementById('ai-results-container');
+        const aiResultsSelect = document.getElementById('ai-results-select');
+        const aiResultsDisplay = document.getElementById('ai-results-display');
+        const imageDetailsCard = document.getElementById('image-details-card');
+        const imageDetails = document.getElementById('image-details');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const canvasPlaceholder = document.getElementById('canvas-placeholder');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const fitScreenBtn = document.getElementById('fit-screen-btn');
+        const moveBtn = document.getElementById('move-btn');
+
+        // --- Fabric.js State ---
+        const canvas = new fabric.Canvas('image-canvas', {
+            selection: false
+        });
+        let currentImage = null;
+        let cropRect = null;
+        let base64ImageData = null; // Stores the full "data:image/..." string
+        let aiAnalysisHistory = {};
+        let imageHistory = [];
+        let isCropping = false;
+        let isPanning = false;
+
+        // --- Fabric.js Helpers ---
+        function saveState() {
+            if (currentImage) {
+                imageHistory.push(currentImage.toDataURL());
+                undoBtn.disabled = false;
+            }
+        }
+
+        function fitAndCenterImage() {
+            if (!currentImage) return;
+            canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
+            const containerWidth = canvasWrapper.clientWidth;
+            const containerHeight = canvasWrapper.clientHeight;
+            canvas.setWidth(containerWidth);
+            canvas.setHeight(containerHeight);
+            const imgWidth = currentImage.width;
+            const imgHeight = currentImage.height;
+            const scale = Math.min(containerWidth / imgWidth, containerHeight / imgHeight) * 0.9;
+            canvas.setZoom(scale);
+            const panX = (containerWidth - imgWidth * scale) / 2;
+            const panY = (containerHeight - imgHeight * scale) / 2;
+            canvas.viewportTransform[4] = panX;
+            canvas.viewportTransform[5] = panY;
+            canvas.renderAll();
+        }
+
+        window.addEventListener('resize', fitAndCenterImage);
+        
+        // --- *** NEW: Helper to get just the base64 part of the data URL *** ---
+        function getBase64String(dataUrl) {
+            if (!dataUrl || !dataUrl.includes(',')) {
+                return dataUrl; // Not a data URL, or already just the string
+            }
+            return dataUrl.split(',')[1];
+        }
+
+        // --- *** NEW: Universal Proxy Function for ALL services *** ---
+        async function callProxy(service, endpoint, body, buttonToSpin = null) {
+            const url = `${PROXY_URL}?service=${encodeURIComponent(service)}&endpoint=${encodeURIComponent(endpoint)}`;
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add the secret API key ONLY for VPS services, not for Google AI
+            if (service !== 'google_ai') {
+                headers['X-API-Key'] = API_KEY;
+            }
+
+            // Show loading spinner
+            let originalButtonText = '';
+            if (buttonToSpin) {
+                originalButtonText = buttonToSpin.innerHTML;
+                buttonToSpin.disabled = true;
+                buttonToSpin.innerHTML = '<div class="loader"></div>';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || `API error: ${response.statusText}`);
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("image/svg+xml")) {
+                    return { _type: 'svg', text: await response.text() };
+                }
+
+                return await response.json();
+
+            } catch (error) {
+                console.error('Proxy Error:', error);
+                const errorKey = 'Error';
+                aiAnalysisHistory[errorKey] = `<p class="text-red-500">Request failed: ${error.message}</p>`;
+                updateAnalysisDropdown(errorKey);
+                return { _error: true, message: error.message };
+            } finally {
+                // Hide loading spinner
+                if (buttonToSpin) {
+                    buttonToSpin.disabled = false;
+                    buttonToSpin.innerHTML = originalButtonText;
+                }
+            }
+        }
+        
+        function updateCanvasImage(newDataUrl) {
+            fabric.Image.fromURL(newDataUrl, (newImg) => {
+                const oldTransform = { 
+                    left: currentImage.left, 
+                    top: currentImage.top, 
+                    scaleX: currentImage.scaleX, 
+                    scaleY: currentImage.scaleY 
+                };
+                canvas.remove(currentImage);
+                currentImage = newImg;
+                currentImage.set({ ...oldTransform, selectable: false, evented: false });
+                canvas.add(currentImage);
+                canvas.renderAll();
+            });
+        }
+
+        // --- File Upload ---
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                base64ImageData = f.target.result; // This is the full "data:image/..." string
+                canvasPlaceholder.style.display = 'none';
+                const img = new Image();
+                img.onload = () => {
+                    const width = img.naturalWidth;
+                    const height = img.naturalHeight;
+                    const printWidth = (width / 300).toFixed(2);
+                    const printHeight = (height / 300).toFixed(2);
+                    imageDetails.innerHTML = `<p><strong>Actual Size:</strong> ${width}px x ${height}px</p><p><strong>Print Size (300DPI):</strong> ${printWidth}" x ${printHeight}"</p>`;
+                    imageDetailsCard.style.display = 'block';
+                    fabric.Image.fromURL(base64ImageData, (fabricImg) => {
+                        canvas.clear();
+                        currentImage = fabricImg;
+                        currentImage.set({ selectable: false, evented: false });
+                        canvas.add(currentImage);
+                        fitAndCenterImage();
+                        
+                        const allMainButtons = document.querySelectorAll('main button');
+                        allMainButtons.forEach(btn => btn.disabled = false);
+                        undoBtn.disabled = true;
+
+                        aiResultsContainer.style.display = 'none';
+                        aiAnalysisHistory = {};
+                        imageHistory = [];
+                    });
+                };
+                img.src = base64ImageData;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- AI Analysis Dropdown ---
+        function updateAnalysisDropdown(newKey) {
+            aiResultsContainer.style.display = 'block';
+            aiResultsSelect.innerHTML = '';
+            Object.keys(aiAnalysisHistory).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                aiResultsSelect.appendChild(option);
+            });
+            aiResultsSelect.value = newKey;
+            aiResultsDisplay.innerHTML = aiAnalysisHistory[newKey];
+        }
+
+        aiResultsSelect.addEventListener('change', () => {
+            aiResultsDisplay.innerHTML = aiAnalysisHistory[aiResultsSelect.value];
+        });
+
+        // --- AI Analysis Button ---
+        analyzeBtn.addEventListener('click', async () => {
+            const prompt = getAnalysisPrompt();
+            const body = {
+                contents: [{ parts: [ 
+                    { text: prompt }, 
+                    { inline_data: { mime_type: 'image/jpeg', data: getBase64String(base64ImageData) } } 
+                ] }],
+                generationConfig: { response_mime_type: 'application/json' }
+            };
+            
+            const result = await callProxy(
+                'google_ai', 
+                '/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent', 
+                body, 
+                analyzeBtn
+            );
+            
+            if (result && !result._error) {
+                try {
+                    const resultText = result.candidates[0].content.parts[0].text;
+                    const resultJson = JSON.parse(resultText);
+                    const resultKey = `Analysis for ${outputProcessSelect.options[outputProcessSelect.selectedIndex].text}`;
+                    let htmlResult = '';
+
+                    if(resultJson.quality_assessment) { // Screen Print or DTF
+                        htmlResult += `<p><strong><i class="fas fa-check-circle text-green-500 mr-1"></i> Quality:</strong> ${resultJson.quality_assessment}</p>`;
+                    }
+                    if(resultJson.digitizing_suitability) { // Embroidery
+                        htmlResult += `<p><strong><i class="fas fa-check-circle text-green-500 mr-1"></i> Suitability:</strong> ${resultJson.digitizing_suitability}</p>`;
+                    }
+
+                    if(resultJson.color_breakdown) { // Screen Print
+                         let colorHtml = '<ul>';
+                        resultJson.color_breakdown.required_screens.forEach(s => colorHtml += `<li>${s}</li>`);
+                        resultJson.color_breakdown.pantone_estimates.forEach(s => colorHtml += `<li>${s}</li>`);
+                        colorHtml += '</ul>';
+                        htmlResult += `<p><strong><i class="fas fa-layer-group text-blue-500 mr-1"></i> Total Screens:</strong> ${resultJson.total_screen_count}</p>
+                                     <div class="mt-2"><strong><i class="fas fa-palette text-purple-500 mr-1"></i> Color Breakdown:</strong>${colorHtml}</div>`;
+                    }
+                    
+                    const recommendations = resultJson.print_recommendations || resultJson.dtf_recommendations || resultJson.embroidery_recommendations;
+                    if(recommendations) {
+                        htmlResult += `<p class="mt-2"><strong><i class="fas fa-lightbulb text-yellow-500 mr-1"></i> Recommendations:</strong></p>
+                                     <ul class="list-disc list-inside pl-2 text-gray-400">${recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
+                    }
+                    
+                    aiAnalysisHistory[resultKey] = htmlResult;
+                    updateAnalysisDropdown(resultKey);
+                } catch(e) {
+                     console.error("Failed to parse AI JSON response:", e, result.candidates[0].content.parts[0].text);
+                     aiAnalysisHistory['Error'] = `<p class="text-red-500">The AI returned an invalid response. Please try again.</p>`;
+                     updateAnalysisDropdown('Error');
+                }
+            }
+        });
+        
+        // --- AI Suggest Colors Button ---
+        suggestColorsBtn.addEventListener('click', async () => {
+             const prompt = `Act as a fashion merchandise consultant. Based on the style, mood, and color palette of the provided artwork, suggest 5 marketable garment colors.
+            HERE IS AN EXAMPLE OF THE EXPECTED OUTPUT QUALITY AND FORMAT:
+            --- EXAMPLE START ---
+            For an image of a retro, faded surf graphic:
+            { "suggestions": [ {"color_name": "Washed Denim", "reasoning": "Enhances the vintage, sun-faded aesthetic of the design."}, {"color_name": "Mustard", "reasoning": "A popular, earthy tone that complements the '70s color palette."}, {"color_name": "Off-White", "reasoning": "Provides a classic, neutral background that makes the faded colors feel intentional."}, {"color_name": "Heather Olive", "reasoning": "Connects with the outdoor, natural theme of the surf graphic."}, {"color_name": "Brick Red", "reasoning": "A warm, retro color that contrasts well with the blues and yellows in the art."} ] }
+            --- EXAMPLE END ---
+            Now, using the exact same JSON structure and expert-level reasoning as the example, suggest 5 garment colors for the provided image.`;
+            
+            const body = {
+                contents: [{ parts: [ 
+                    { text: prompt }, 
+                    { inline_data: { mime_type: 'image/jpeg', data: getBase64String(base64ImageData) } } 
+                ] }],
+                generationConfig: { response_mime_type: 'application/json' }
+            };
+            
+            const result = await callProxy(
+                'google_ai', 
+                '/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent', 
+                body, 
+                suggestColorsBtn
+            );
+            
+            if (result && !result._error) {
+                try {
+                    const resultText = result.candidates[0].content.parts[0].text;
+                    const resultJson = JSON.parse(resultText);
+                    const resultKey = 'Garment Color Suggestions';
+                    aiAnalysisHistory[resultKey] = `<p><strong><i class="fas fa-shirt text-teal-500 mr-1"></i> Suggested Garment Colors:</strong></p><ul class="list-none pl-2 text-gray-400 space-y-2 mt-2">${resultJson.suggestions.map(item => `<li><strong>${item.color_name}:</strong> ${item.reasoning}</li>`).join('')}</ul>`;
+                    updateAnalysisDropdown(resultKey);
+                } catch(e) {
+                     console.error("Failed to parse AI JSON response:", e);
+                     aiAnalysisHistory['Error'] = `<p class="text-red-500">The AI returned an invalid response. Please try again.</p>`;
+                     updateAnalysisDropdown('Error');
+                }
+            }
+        });
+        
+        // --- Enhancement Tools ---
+        undoBtn.addEventListener('click', () => {
+            if (imageHistory.length > 0) {
+                const lastState = imageHistory.pop();
+                fabric.Image.fromURL(lastState, (img) => {
+                    canvas.clear();
+                    currentImage = img;
+                    currentImage.set({ selectable: false, evented: false });
+                    canvas.add(currentImage);
+                    fitAndCenterImage();
+                    base64ImageData = lastState; // Revert base64 data as well
+                });
+                if (imageHistory.length === 0) {
+                    undoBtn.disabled = true;
+                }
+            }
+        });
+        
+        fabric.Image.filters.EnhanceBW = fabric.util.createClass(fabric.Image.filters.BaseFilter, { type: 'EnhanceBW', applyTo2d: function(options) { const d=options.imageData.data;for(let i=0;i<d.length;i+=4){const a=(d[i]+d[i+1]+d[i+2])/3;if(a<=25.5){d[i]=d[i+1]=d[i+2]=0}else if(a>=242.25){d[i]=d[i+1]=d[i+2]=255}} } });
+        
+        bwEnhanceBtn.addEventListener('click', () => {
+            if (!currentImage) return;
+            saveState();
+            base64ImageData = currentImage.toDataURL(); // Update base64 before filter
+            currentImage.filters.push(new fabric.Image.filters.EnhanceBW());
+            currentImage.applyFilters();
+            canvas.renderAll();
+        });
+
+        // --- *** NEW: REAL VPS-Powered Enhancement Buttons *** ---
+        removeBgBtn.addEventListener('click', async () => {
+            if (!currentImage) return;
+            saveState();
+            base64ImageData = currentImage.toDataURL(); // Get current state
+            
+            const result = await callProxy(
+                'bg_remover',
+                '/remove-background',
+                { image_base64: getBase64String(base64ImageData) },
+                removeBgBtn
+            );
+            
+            if (result && !result._error) {
+                const newDataUrl = 'data:image/png;base64,' + result.image_base64;
+                base64ImageData = newDataUrl; // Update state
+                updateCanvasImage(newDataUrl);
+            }
+        });
+
+        upscaleBtn.addEventListener('click', async () => {
+            if (!currentImage) return;
+            saveState();
+            base64ImageData = currentImage.toDataURL(); // Get current state
+
+            const result = await callProxy(
+                'upscaler',
+                '/upscale',
+                { image_base64: getBase64String(base64ImageData) },
+                upscaleBtn
+            );
+
+            if (result && !result._error) {
+                const newDataUrl = 'data:image/png;base64,' + result.image_base64;
+                base64ImageData = newDataUrl; // Update state
+                updateCanvasImage(newDataUrl);
+                // Also update the image details
+                const img = new Image();
+                img.onload = () => {
+                    const width = img.naturalWidth;
+                    const height = img.naturalHeight;
+                    const printWidth = (width / 300).toFixed(2);
+                    const printHeight = (height / 300).toFixed(2);
+                    imageDetails.innerHTML = `<p><strong>Actual Size:</strong> ${width}px x ${height}px</p><p><strong>Print Size (300DPI):</strong> ${printWidth}" x ${printHeight}"</p>`;
+                };
+                img.src = newDataUrl;
+            }
+        });
+
+        vectorizeBtn.addEventListener('click', async () => {
+            if (!currentImage) return;
+            saveState();
+            base64ImageData = currentImage.toDataURL(); // Get current state
+
+            const result = await callProxy(
+                'vectorizer',
+                '/vectorize',
+                { image_base64: getBase64String(base64ImageData) },
+                vectorizeBtn
+            );
+
+            if (result && !result._error && result._type === 'svg') {
+                const svgBlob = new Blob([result.text], { type: 'image/svg+xml' });
+                const svgUrl = URL.createObjectURL(svgBlob);
+                window.open(svgUrl, '_blank');
+            } else if (result._error) {
+                 // Error is already handled by callProxy
+            } else {
+                aiAnalysisHistory['Error'] = `<p class="text-red-500">Invalid response from vectorizer.</p>`;
+                updateAnalysisDropdown('Error');
+            }
+        });
+
+        cropBtn.addEventListener('click', () => {
+            if (!currentImage) return;
+            isCropping = !isCropping;
+            if (isCropping) {
+                cropBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Apply Crop';
+                cropBtn.classList.replace('btn-secondary', 'btn-success');
+                moveBtn.classList.remove('active');
+                isPanning = false;
+
+                const center = canvas.getCenter();
+                cropRect = new fabric.Rect({
+                    left: center.left - (currentImage.getScaledWidth() / 4),
+                    top: center.top - (currentImage.getScaledHeight() / 4),
+                    width: currentImage.getScaledWidth() / 2,
+                    height: currentImage.getScaledHeight() / 2,
+                    fill: 'rgba(0,0,0,0.3)',
+                    stroke: '#2563eb',
+                    strokeWidth: 2 / canvas.getZoom(),
+                    cornerColor: '#2563eb',
+                    cornerSize: 10 / canvas.getZoom(),
+                    transparentCorners: false,
+                    hasRotatingPoint: false 
+                });
+                canvas.add(cropRect);
+                canvas.setActiveObject(cropRect);
+            } else {
+                cropBtn.innerHTML = '<i class="fas fa-crop-alt mr-2"></i> Crop Image';
+                cropBtn.classList.replace('btn-success', 'btn-secondary');
+                
+                saveState();
+                
+                const cropX = (cropRect.left - currentImage.left);
+                const cropY = (cropRect.top - currentImage.top);
+
+                const croppedDataUrl = currentImage.toDataURL({
+                    left: cropX / currentImage.scaleX,
+                    top: cropY / currentImage.scaleY,
+                    width: cropRect.getScaledWidth() / currentImage.scaleX,
+                    height: cropRect.getScaledHeight() / currentImage.scaleY
+                });
+                
+                base64ImageData = croppedDataUrl; // Update state
+
+                fabric.Image.fromURL(croppedDataUrl, (newImg) => {
+                    canvas.remove(currentImage);
+                    if (cropRect) {
+                        canvas.remove(cropRect);
+                        cropRect = null;
+                    }
+                    currentImage = newImg;
+                    currentImage.set({ selectable: false, evented: false });
+                    canvas.add(currentImage);
+                    fitAndCenterImage();
+                });
+            }
+            canvas.renderAll();
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!currentImage) return;
+            const dataURL = currentImage.toDataURL({ format: 'png', quality: 1.0 });
+            const link = document.createElement('a');
+            link.download = 'enhanced-image.png';
+            link.href = dataURL;
+            link.click();
+        });
+
+        // --- View Tools Logic ---
+        zoomInBtn.addEventListener('click', () => canvas.setZoom(canvas.getZoom() * 1.2));
+        zoomOutBtn.addEventListener('click', () => canvas.setZoom(canvas.getZoom() / 1.2));
+        fitScreenBtn.addEventListener('click', fitAndCenterImage);
+        
+        moveBtn.addEventListener('click', () => {
+            isPanning = !isPanning;
+            moveBtn.classList.toggle('active', isPanning);
+            if (isCropping && isPanning) {
+                 cropBtn.click();
+            }
+        });
+
+        canvas.on('mouse:wheel', function(opt) {
+            const delta = opt.e.deltaY; let zoom = canvas.getZoom();
+            zoom *= 0.999 ** delta;
+            if (zoom > 20) zoom = 20; if (zoom < 0.01) zoom = 0.01;
+            canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            opt.e.preventDefault(); opt.e.stopPropagation();
+        });
+
+        canvas.on('mouse:down', function(opt) {
+            const evt = opt.e;
+            if (isPanning && !isCropping) {
+                this.isDragging = true;
+                this.lastPosX = evt.clientX; this.lastPosY = evt.clientY;
+            }
+        });
+        canvas.on('mouse:move', function(opt) {
+            if (this.isDragging) {
+                const e = opt.e;
+                const vpt = this.viewportTransform;
+                vpt[4] += e.clientX - this.lastPosX;
+                vpt[5] += e.clientY - this.lastPosY;
+                this.requestRenderAll();
+                this.lastPosX = e.clientX; this.lastPosY = e.clientY;
+            }
+        });
+        canvas.on('mouse:up', function(opt) {
+            this.setViewportTransform(this.viewportTransform);
+            this.isDragging = false;
+        });
+
+        // --- Prompt Generation ---
+        function getAnalysisPrompt() {
+            const process = outputProcessSelect.value;
+            let prompt;
+
+            switch(process) {
+                case 'dtf':
+                    prompt = `Act as an expert prepress technician specializing in Direct-to-Film (DTF) printing.
+                    EXAMPLE: { "quality_assessment": "Excellent for DTF", "dtf_recommendations": [ "Resolution is high (above 300DPI at target size).", "Artwork has clean, hard edges which are ideal for DTF.", "Transparent background is clean with no stray pixels." ] }
+                    Analyze the image for DTF printing. Use the exact JSON structure from the example. Provide a concise, point-form analysis focusing on resolution, edge quality, and transparency.`;
+                    break;
+                case 'embroidery':
+                    prompt = `Act as an expert embroidery digitizer.
+                    EXAMPLE: { "digitizing_suitability": "Challenging", "embroidery_recommendations": [ "Small text ('Print Studio') will likely not be legible when stitched.", "Gradients in the splash effect must be converted to solid color thread blocks.", "Fine wispy details in the logo will be lost and should be thickened.", "Recommend a combination of satin stitch for text and tatami fill for larger color blocks." ] }
+                    Analyze the image for embroidery suitability. Use the exact JSON structure from the example. Provide a concise, point-form analysis focusing on elements that are difficult to digitize, like small text, gradients, and fine lines.`;
+                    break;
+                case 'screen_printing':
+                default:
+                    prompt = `Act as an expert prepress technician with 35 years of experience specializing in screen printing. Your analysis must be hyper-critical and follow the specified JSON format precisely.
+                    EXAMPLE: { "quality_assessment": "Good for Screen Printing", "color_breakdown": { "required_screens": ["White Underbase", "Highlight White"], "pantone_estimates": ["Bright Red (PMS 186 C)", "Golden Yellow (PMS 108 C)"] }, "total_screen_count": 4, "print_recommendations": [ "Action Required: Image resolution is low; upscale to 300 DPI at print size.", "Underbase: Mandatory white for darks, flash cure before top colors.", "Gradients: Halftones required. LPI: 45, Angle: 22.5 degrees.", "Fine Text: Use 230+ mesh for all screens to maintain clarity." ] }
+                    Now, analyze the provided image.
+                    RULES: 1. Use the exact same JSON structure as the example. 2. ALWAYS include a "White Underbase". If there are bright highlights, ALSO include "Highlight White". If there is black in the design, include "Black". 3. Estimate Pantone Coated (C) colors. 4. "total_screen_count" MUST be the sum of all colors. 5. For halftones, you MUST specify a 22.5-degree angle. 6. Be concise and use point-form. 7. State clearly if upscaling or vectorization is a required action. 8. DO NOT suggest CMYK or DTG.`;
+                    break;
+            }
+            return prompt;
+        }
+
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embroidery LAB Pro | ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f9fafb; overflow: hidden; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; }
+        
+        /* Scrollbars */
+        .scroll-container { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #475569 #1e293b; min-height: 0; }
+        .scroll-container::-webkit-scrollbar { width: 6px; }
+        .scroll-container::-webkit-scrollbar-track { background: #1e293b; }
+        .scroll-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .scroll-container::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Interactive Elements */
+        .btn-tool { background-color: #334155; color: #cbd5e1; border: 1px solid #475569; font-size: 0.75rem; padding: 0.6rem; width: 100%; justify-content: flex-start; display: flex; align-items: center; transition: all 0.2s; }
+        .btn-tool:hover { background-color: #475569; color: white; border-color: #64748b; transform: translateX(2px); }
+        .nav-tab { cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s; opacity: 0.6; }
+        .nav-tab.active { border-color: #2563eb; color: #fff; opacity: 1; }
+        
+        /* Viewport */
+        .viewport-container { overflow: hidden; position: relative; background-color: #0f172a; height: 100%; width: 100%; cursor: grab; display: block; }
+        .viewport-container:active { cursor: grabbing; }
+        .hq-render { image-rendering: auto; will-change: transform; }
+
+        /* Tablet Mode Enhancements */
+        body.tablet-mode .btn-tool { padding: 1rem; font-size: 0.9rem; }
+        body.tablet-mode input[type="range"] { height: 20px; }
+
+        /* Overlays */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .loader-spinner { border: 2px solid #f3f3f3; border-top: 2px solid #2563eb; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; margin-right: 5px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* AI Text Styling */
+        .ai-response-content h1, .ai-response-content h2 { font-weight: bold; color: #60a5fa; margin-top: 0.5rem; }
+        .ai-response-content ul { list-style-type: disc; padding-left: 1.5rem; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    <!-- Top Nav -->
+    <nav class="bg-slate-900/95 border-b border-slate-700 z-50 h-16 flex-shrink-0">
+        <div class="max-w-full mx-auto px-4 h-full flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
+                        <i class="fas fa-crosshairs text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white tracking-tight">Embroidery LAB <span class="text-blue-400 text-xs uppercase ml-1 align-top">Pro</span></span>
+                </div>
+                <!-- Tabs -->
+                <div class="flex space-x-6 ml-8 h-full">
+                    <button onclick="switchMode('editor')" id="tab-editor" class="nav-tab active h-full flex items-center gap-2 text-sm font-medium">
+                        <i class="fas fa-pencil-alt"></i> Image Prep
+                    </button>
+                    <button onclick="switchMode('studio')" id="tab-studio" class="nav-tab h-full flex items-center gap-2 text-sm font-medium">
+                        <i class="fas fa-layer-group"></i> Digitizing Studio
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- Tablet Toggle -->
+                <button id="tablet-mode-btn" onclick="toggleTabletMode()" class="text-slate-400 hover:text-white text-xs flex items-center gap-1 border border-slate-700 px-2 py-1 rounded transition-all">
+                    <i class="fas fa-pen-fancy"></i> Tablet: <span id="tablet-status" class="text-slate-500">OFF</span>
+                </button>
+
+                <div class="flex items-center gap-2 text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                    <span id="vps-dot" class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    <span id="vps-status" class="text-slate-300">Connecting...</span>
+                </div>
+                <a href="https://elevatedcolorlab.com/dashboard.html" class="text-slate-400 hover:text-white text-sm font-medium"><i class="fas fa-sign-out-alt mr-1"></i> Exit</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-hidden relative min-h-0">
+        
+        <!-- VIEW 1: IMAGE PREP EDITOR -->
+        <div id="view-editor" class="absolute inset-0 grid grid-cols-12 gap-0 h-full">
+            <!-- Left Sidebar -->
+            <div class="col-span-3 bg-slate-900 border-r border-slate-800 flex flex-col h-full overflow-hidden">
+                <div class="p-4 border-b border-slate-800 shrink-0">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Source Image</h3>
+                    <div class="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer transition-all bg-slate-800/50" onclick="document.getElementById('file-upload').click()">
+                        <input type="file" id="file-upload" class="hidden" accept="image/*" onchange="loadImage(this.files[0])">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-2"></i>
+                        <p class="text-xs text-slate-400">Upload Raster/Vector</p>
+                    </div>
+                </div>
+
+                <!-- Tool List -->
+                <div class="p-4 flex-1 scroll-container space-y-4 min-h-0">
+                    <!-- Image Health -->
+                    <div id="health-panel" class="hidden bg-slate-800/80 border border-slate-700 rounded p-3 fade-in mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fas fa-microscope text-green-400"></i> Stitch Audit</h3>
+                            <span class="text-[10px] bg-slate-700 px-1.5 rounded text-slate-300">AI Scan</span>
+                        </div>
+                        <div id="health-content" class="space-y-2"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Prep Tools</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="runTool('upscaler')" class="btn-tool rounded"><i class="fas fa-expand text-blue-400 mr-2"></i> Upscale</button>
+                            <button onclick="runTool('vectorizer')" class="btn-tool rounded"><i class="fas fa-bezier-curve text-blue-400 mr-2"></i> Vectorize</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Cleanup</h3>
+                        <div class="space-y-2">
+                            <button onclick="runTool('bg_remover')" class="btn-tool rounded"><i class="fas fa-eraser text-red-400 mr-2"></i> Remove Background</button>
+                            <button onclick="runTool('crop')" class="btn-tool rounded"><i class="fas fa-crop-alt text-green-400 mr-2"></i> Auto-Crop Bounds</button>
+                            <button onclick="runTool('quantize')" class="btn-tool rounded"><i class="fas fa-palette text-yellow-400 mr-2"></i> Reduce Colors (Quantize)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0 z-20 shadow-2xl">
+                    <button onclick="sendToDigitizer()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-arrow-right"></i> Send to Digitizer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Canvas -->
+            <div class="col-span-9 bg-slate-950 relative flex flex-col h-full">
+                <div class="h-12 border-b border-slate-800 flex justify-between items-center px-4 bg-slate-900 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetZoom()" class="w-8 h-8 bg-slate-800 rounded text-slate-400 hover:text-white" title="Fit"><i class="fas fa-compress-arrows-alt"></i></button>
+                        <span id="zoom-display" class="text-xs text-slate-400 font-mono w-12 text-center">100%</span>
+                    </div>
+                    <span id="tool-status" class="text-xs text-blue-400 hidden flex items-center"><span class="loader-spinner mr-2"></span> Processing...</span>
+                </div>
+                <div id="viewport" class="viewport-container flex items-center justify-center p-10 flex-1">
+                    <div id="pan-layer" class="relative shadow-2xl transition-transform duration-100 ease-out">
+                        <img id="main-img" src="" class="max-w-none hidden hq-render" draggable="false">
+                        <div id="placeholder" class="text-slate-600 flex flex-col items-center">
+                            <i class="fas fa-tshirt text-6xl mb-4 opacity-20"></i>
+                            <p>Upload artwork to begin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: DIGITIZING STUDIO -->
+        <div id="view-studio" class="absolute inset-0 grid grid-cols-12 gap-0 h-full hidden">
+            <!-- Left: Digitizer Controls -->
+            <div class="col-span-3 bg-slate-900 border-r border-slate-800 flex flex-col h-full overflow-hidden">
+                <div class="p-4 border-b border-slate-800 shrink-0">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">Stitch Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Stitch Density</label>
+                            <input type="range" min="0.2" max="0.6" step="0.05" value="0.4" class="w-full accent-blue-500" oninput="document.getElementById('density-val').innerText=this.value+'mm'">
+                            <div class="flex justify-between text-[10px] text-slate-500"><span>Fine</span><span id="density-val" class="text-white">0.4mm</span><span>Coarse</span></div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Pull Compensation</label>
+                            <input type="range" min="0" max="0.5" step="0.1" value="0.2" class="w-full accent-blue-500">
+                            <div class="text-right text-[10px] text-slate-500">0.2mm</div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Underlay Type</label>
+                            <select class="w-full bg-slate-800 border border-slate-700 text-white rounded text-xs p-1.5 focus:border-blue-500 outline-none">
+                                <option>Center Run</option>
+                                <option>Edge Run</option>
+                                <option>Tatami (Full)</option>
+                                <option>None</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Advisor Panel -->
+                <div class="p-4 flex-1 scroll-container space-y-4">
+                    <div class="bg-slate-800 p-3 rounded border border-slate-700 shadow-sm">
+                        <h3 class="text-xs font-bold text-white mb-2 flex items-center"><i class="fas fa-sparkles text-yellow-400 mr-2"></i> Fabric Advisor</h3>
+                        <p class="text-[10px] text-slate-400 mb-2">Get stabilizer & needle advice.</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="fabric-input" placeholder="e.g. Leather, Pique..." class="w-full bg-slate-900 border border-slate-700 text-white rounded text-xs px-2 py-1">
+                            <button onclick="askFabricExpert()" class="bg-blue-600 text-white px-3 rounded text-xs font-bold">Ask</button>
+                        </div>
+                    </div>
+
+                    <button onclick="getThreadColors()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-600 rounded text-xs font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-palette"></i> AI Thread Match
+                    </button>
+                </div>
+
+                <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0 z-20 shadow-2xl">
+                    <button onclick="runDigitizer()" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold shadow-lg flex items-center justify-center gap-2 mb-2">
+                        <i class="fas fa-microchip"></i> Run VPS Digitizer
+                    </button>
+                    <button onclick="exportDST()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded text-xs font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-file-export"></i> Export .DST
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Stitch Preview -->
+            <div class="col-span-9 bg-slate-950 relative flex flex-col h-full">
+                <div class="h-12 border-b border-slate-800 flex justify-between items-center px-4 bg-slate-900 shrink-0">
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 text-xs rounded bg-slate-800 text-white hover:bg-slate-700">Realistic</button>
+                        <button class="px-3 py-1 text-xs rounded bg-slate-800 text-slate-400 hover:bg-slate-700">Wireframe</button>
+                    </div>
+                    <div class="flex gap-4 text-xs">
+                        <div class="flex flex-col items-end"><span class="text-slate-400 text-[10px]">Stitches</span><span class="text-white font-mono font-bold" id="stat-stitch">0</span></div>
+                        <div class="flex flex-col items-end"><span class="text-slate-400 text-[10px]">Colors</span><span class="text-white font-mono font-bold" id="stat-color">0</span></div>
+                    </div>
+                </div>
+                
+                <div class="flex-1 flex items-center justify-center p-10 relative">
+                    <!-- Hoop Guide -->
+                    <div class="absolute w-[300px] h-[300px] border-2 border-slate-700 rounded-full pointer-events-none opacity-20"></div>
+                    <!-- Stitch Canvas -->
+                    <canvas id="stitch-canvas" class="hidden stitch-overlay"></canvas>
+                    <!-- Initial image ghost -->
+                    <img id="digitize-source" src="" class="max-w-md max-h-md opacity-20 hidden">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Gemini Modal -->
+    <div id="ai-modal" class="modal-overlay">
+        <div class="bg-slate-800 w-full max-w-md rounded-xl border border-slate-600 shadow-2xl p-0 overflow-hidden">
+            <div class="p-4 bg-slate-900 border-b border-slate-700 flex justify-between">
+                <h3 class="text-white font-bold flex items-center gap-2"><i class="fas fa-sparkles text-blue-400"></i> Gemini Advisor</h3>
+                <button onclick="document.getElementById('ai-modal').style.display='none'" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="ai-content" class="p-5 text-sm text-slate-300 max-h-[60vh] overflow-y-auto ai-response-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const PROXY_URL = 'api-proxy.php';
+        const appState = {
+            img: null, 
+            zoom: 1, panX: 0, panY: 0, 
+            isTabletMode: false
+        };
+
+        function init() {
+            checkServices();
+            switchMode('editor');
+            setupViewport();
+        }
+
+        function checkServices() {
+            fetch(PROXY_URL + '?service=main&endpoint=/health').then(r=>r.json())
+            .then(() => { document.getElementById('vps-dot').classList.replace('bg-yellow-500', 'bg-green-500'); document.getElementById('vps-status').innerText = "Online"; })
+            .catch(() => { document.getElementById('vps-dot').classList.replace('bg-yellow-500', 'bg-red-500'); document.getElementById('vps-status').innerText = "Offline"; });
+        }
+
+        window.switchMode = (mode) => {
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+            document.getElementById('view-editor').classList.add('hidden');
+            document.getElementById('view-studio').classList.add('hidden');
+            document.getElementById(`view-${mode}`).classList.remove('hidden');
+        };
+
+        function toggleTabletMode() {
+            appState.isTabletMode = !appState.isTabletMode;
+            const btn = document.getElementById('tablet-mode-btn');
+            const status = document.getElementById('tablet-status');
+            if(appState.isTabletMode) {
+                document.body.classList.add('tablet-mode');
+                status.innerText = "ON"; status.className = "text-green-400";
+                btn.classList.add('bg-blue-900/30', 'border-blue-500');
+            } else {
+                document.body.classList.remove('tablet-mode');
+                status.innerText = "OFF"; status.className = "text-slate-500";
+                btn.classList.remove('bg-blue-900/30', 'border-blue-500');
+            }
+        }
+
+        // --- IMAGE HANDLING ---
+        function loadImage(file) {
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    appState.img = img;
+                    document.getElementById('main-img').src = e.target.result;
+                    document.getElementById('digitize-source').src = e.target.result;
+                    document.getElementById('main-img').classList.remove('hidden');
+                    document.getElementById('placeholder').classList.add('hidden');
+                    
+                    // Auto-Run Audit
+                    auditDesign(img);
+                    
+                    requestAnimationFrame(() => resetZoom());
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function auditDesign(img) {
+            const content = document.getElementById('health-content');
+            const panel = document.getElementById('health-panel');
+            panel.classList.remove('hidden');
+            content.innerHTML = '';
+            
+            // Simple logic for demo - real logic would use pixel analysis
+            const issues = [];
+            if(img.naturalWidth < 800) issues.push({icon:'fa-exclamation-triangle text-yellow-400', text:'Low Res for Detail', fix:'upscaler'});
+            
+            // Check colors (mock)
+            issues.push({icon:'fa-palette text-blue-300', text:'Detected 12+ Colors', fix:'quantize'});
+            
+            issues.forEach(i => {
+                content.innerHTML += `<div class="flex items-start gap-2 text-[10px] text-slate-300"><i class="fas ${i.icon} mt-0.5"></i><div class="flex-1"><p class="font-bold">${i.text}</p></div><button onclick="runTool('${i.fix}')" class="text-blue-400 hover:underline">Fix</button></div>`;
+            });
+        }
+
+        function sendToDigitizer() {
+            document.getElementById('digitize-source').classList.remove('hidden');
+            switchMode('studio');
+        }
+
+        // --- TOOLS ---
+        async function runTool(tool) {
+            if(!appState.img) return alert("Upload image first.");
+            const status = document.getElementById('tool-status');
+            status.classList.remove('hidden');
+            
+            // Mapping
+            let service = 'main', endpoint = '/process';
+            if(tool === 'upscaler') { service = 'upscaler'; endpoint = '/upscale'; }
+            if(tool === 'vectorizer') { service = 'vectorizer'; endpoint = '/vectorize'; }
+            if(tool === 'bg_remover') { service = 'bg_remover'; endpoint = '/remove-bg'; }
+            if(tool === 'crop') { service = 'image_prep'; endpoint = '/crop_transparent'; }
+
+            // Mock call for structure
+            setTimeout(() => {
+                status.classList.add('hidden');
+                alert(`${tool} complete (Simulated). In prod, image would update.`);
+            }, 1000);
+        }
+
+        // --- DIGITIZER ---
+        async function runDigitizer() {
+            if(!appState.img) return alert("No image source.");
+            const status = document.getElementById('tool-status');
+            status.classList.remove('hidden');
+            status.innerHTML = `<span class="loader-spinner mr-2"></span> Generating Stitches...`;
+
+            try {
+                // Call Port 8007
+                // For demo, we draw a mock stitch path on canvas
+                const canvas = document.getElementById('stitch-canvas');
+                const ctx = canvas.getContext('2d');
+                const img = document.getElementById('digitize-source');
+                
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.classList.remove('hidden');
+                
+                ctx.drawImage(img, 0,0);
+                // Effect
+                const imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+                // Simple edge detection visual for "stitches"
+                // ... (pixel manipulation code would go here)
+                
+                // Mock Stats
+                document.getElementById('stat-stitch').innerText = Math.floor(Math.random()*15000 + 2000);
+                document.getElementById('stat-color').innerText = Math.floor(Math.random()*5 + 1);
+
+            } catch(e) { console.error(e); }
+            finally { status.classList.add('hidden'); }
+        }
+
+        // --- AI ADVISOR ---
+        async function askFabricExpert() {
+            const fabric = document.getElementById('fabric-input').value;
+            if(!fabric) return alert("Enter fabric type.");
+            
+            const prompt = `I am a professional embroiderer. Give me technical settings for embroidering on: "${fabric}".
+            Include: Stabilizer type, Needle size/point, Hoop tension, and Underlay settings.`;
+            
+            const modal = document.getElementById('ai-modal');
+            const content = document.getElementById('ai-content');
+            modal.style.display = 'flex';
+            content.innerHTML = `<div class="flex justify-center py-8"><div class="loader-spinner w-8 h-8 border-4"></div></div>`;
+            
+            try {
+                const res = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        service: 'google_ai',
+                        endpoint: '/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent',
+                        body: { contents: [{ parts: [{ text: prompt }] }] }
+                    })
+                });
+                const data = await res.json();
+                content.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
+            } catch(e) { content.innerHTML = "AI Error."; }
+        }
+
+        // --- ZOOM ---
+        function setupViewport() {
+            const vp = document.getElementById('viewport');
+            let isPanning = false;
+            
+            vp.addEventListener('wheel', e => {
+                e.preventDefault();
+                appState.zoom = Math.max(0.1, appState.zoom - e.deltaY * 0.001);
+                updateTransform();
+            });
+            vp.addEventListener('mousedown', () => isPanning = true);
+            window.addEventListener('mouseup', () => isPanning = false);
+            window.addEventListener('mousemove', e => {
+                if(isPanning) {
+                    appState.panX += e.movementX;
+                    appState.panY += e.movementY;
+                    updateTransform();
+                }
+            });
+        }
+
+        function updateTransform() {
+            document.getElementById('pan-layer').style.transform = `translate(${appState.panX}px, ${appState.panY}px) scale(${appState.zoom})`;
+            document.getElementById('zoom-display').innerText = Math.round(appState.zoom*100)+'%';
+        }
+        function resetZoom() {
+            const vp = document.getElementById('viewport');
+            const img = appState.img;
+            if(img) {
+                const scale = Math.min((vp.clientWidth-40)/img.naturalWidth, (vp.clientHeight-40)/img.naturalHeight, 1);
+                appState.zoom = scale;
+                appState.panX = 0; appState.panY = 0;
+                // Center
+                const rect = document.getElementById('pan-layer').getBoundingClientRect();
+                // Simple center reset
+                document.getElementById('pan-layer').style.transformOrigin = 'center center';
+                updateTransform();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

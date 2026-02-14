@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory | ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f9fafb; }
+        .card { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.75rem; }
+        .form-input, .form-select { background-color: #374151; border-color: #4b5563; border-radius: 0.5rem; padding: 0.75rem 1rem; width: 100%; color: white; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; }
+        .btn-primary { background-color: #2563eb; }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #374151; }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .modal-overlay { display: none; }
+        .modal-overlay.flex { display: flex; }
+        .filter-btn { background-color: #374151; color: #d1d5db; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; }
+        .filter-btn.active { background-color: #2563eb; color: white; }
+    </style>
+    <script>
+        const token = sessionStorage.getItem('main_user_token');
+        if (!token) { window.location.href = '/login.html'; }
+    </script>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-[#1f2937] p-6 flex-shrink-0 flex flex-col">
+            <div class="flex items-center space-x-3 mb-10">
+                <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"><i class="fas fa-layer-group text-white"></i></div>
+                <span class="text-xl font-bold tracking-tight text-white">Elevated<span class="text-blue-500">ColorLab</span></span>
+            </div>
+            <nav class="space-y-2 flex-grow">
+                <a href="dashboard.html" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md">
+                    <i class="fas fa-tachometer-alt fa-fw"></i><span>Dashboard</span>
+                </a>
+                <a href="inventory.html" class="flex items-center space-x-3 text-white bg-blue-600/20 border-l-2 border-blue-500 py-2 px-4 rounded-r-md">
+                     <i class="fas fa-boxes fa-fw text-blue-400"></i><span class="font-semibold">Inventory</span>
+                </a>
+                <!-- Other links -->
+            </nav>
+            <a href="#" id="logout-button" class="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-gray-700/50 py-2 px-4 rounded-md mt-auto">
+                <i class="fas fa-sign-out-alt fa-fw"></i><span>Logout</span>
+            </a>
+        </aside>
+        <main class="flex-1 p-8 lg:p-12">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold text-white">Inventory Management</h1>
+                    <p class="text-gray-400 mt-2">Track and manage your stock levels for inks, garments, and supplies.</p>
+                </div>
+                <button id="add-item-btn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i> Add New Item</button>
+            </div>
+            <div class="mb-6 flex space-x-2">
+                <button class="filter-btn active" data-category="All">All</button>
+                <button class="filter-btn" data-category="Ink">Ink</button>
+                <button class="filter-btn" data-category="Garment">Garments</button>
+                <button class="filter-btn" data-category="Supplies">Supplies</button>
+                <button class="filter-btn" data-category="Other">Other</button>
+            </div>
+            <div class="card p-6 rounded-lg">
+                <div id="inventory-table-container" class="overflow-x-auto">
+                    <!-- Table will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Item Modal -->
+    <div id="item-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-70 items-center justify-center">
+        <div class="card p-8 rounded-lg max-w-2xl w-full">
+            <h2 id="modal-title" class="text-2xl font-bold mb-6">Add New Item</h2>
+            <form id="item-form" class="space-y-4">
+                <input type="hidden" id="item-id" name="id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label id="item-name-label" for="item_name" class="block text-sm font-medium mb-1">Item Name</label><input type="text" id="item_name" name="item_name" required class="form-input mt-1"></div>
+                    <div><label for="category" class="block text-sm font-medium mb-1">Category</label><select id="category" name="category" required class="form-select mt-1"><option value="Ink">Ink</option><option value="Garment">Garment</option><option value="Supplies">Supplies</option><option value="Other">Other</option></select></div>
+                </div>
+                
+                <div id="garment-fields" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="sizes" class="block text-sm font-medium mb-1">Sizes (comma-separated)</label><input type="text" id="sizes" name="sizes" class="form-input mt-1" placeholder="S, M, L, XL"></div>
+                        <div><label for="color" class="block text-sm font-medium mb-1">Color</label><input type="text" id="color" name="color" class="form-input mt-1" placeholder="e.g., Black Heather"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium mb-1">Quantity</label>
+                        <div class="flex mt-1"><input type="number" step="any" id="quantity" name="quantity" required class="form-input rounded-r-none"><select id="quantity_unit" name="quantity_unit" class="form-select w-28 rounded-l-none"><option value="pieces">pieces</option><option value="gallons">gallons</option><option value="quarts">quarts</option><option value="pints">pints</option><option value="grams">grams</option></select></div>
+                    </div>
+                    <div>
+                        <label for="low_stock_threshold" class="block text-sm font-medium mb-1">Low Stock Alert</label>
+                        <div class="flex mt-1"><input type="number" step="any" id="low_stock_threshold" name="low_stock_threshold" required class="form-input rounded-r-none"><select id="low_stock_unit" name="low_stock_unit" class="form-select w-28 rounded-l-none"><option value="units">units</option><option value="percent">%</option></select></div>
+                    </div>
+                </div>
+                
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label for="supplier_name" class="block text-sm font-medium mb-1">Main Supplier</label><input type="text" id="supplier_name" name="supplier_name" class="form-input mt-1"></div>
+                    <div><label for="supplier_email" class="block text-sm font-medium mb-1">Supplier Email</label><input type="email" id="supplier_email" name="supplier_email" class="form-input mt-1"></div>
+                </div>
+                 <div><label for="alt_supplier_name" class="block text-sm font-medium mb-1">Alternative Supplier (Optional)</label><input type="text" id="alt_supplier_name" name="alt_supplier_name" class="form-input mt-1"></div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = sessionStorage.getItem('main_user_token');
+            const tableContainer = document.getElementById('inventory-table-container');
+            const modal = document.getElementById('item-modal');
+            const form = document.getElementById('item-form');
+            const modalTitle = document.getElementById('modal-title');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            
+            const categorySelect = document.getElementById('category');
+            const garmentFields = document.getElementById('garment-fields');
+            const quantityUnit = document.getElementById('quantity_unit');
+            const lowStockUnit = document.getElementById('low_stock_unit');
+            const itemNameLabel = document.getElementById('item-name-label');
+
+            document.getElementById('logout-button').addEventListener('click', () => { sessionStorage.clear(); window.location.href = '/login.html'; });
+
+            function toggleModal(show) { modal.classList.toggle('flex', show); modal.classList.toggle('hidden', !show); }
+
+            function handleCategoryChange() {
+                const category = categorySelect.value;
+                const isGarment = category === 'Garment';
+                const isInk = category === 'Ink';
+
+                itemNameLabel.textContent = isInk ? 'Ink Color / PMS' : 'Item Name';
+                garmentFields.classList.toggle('hidden', !isGarment);
+                document.getElementById('sizes').required = isGarment;
+                document.getElementById('color').required = isGarment;
+
+                // Show/hide unit options based on category
+                Array.from(quantityUnit.options).forEach(opt => {
+                    opt.hidden = !['pieces', 'gallons', 'quarts', 'pints', 'grams'].includes(opt.value) || (category !== 'Ink' && ['gallons', 'quarts', 'pints', 'grams'].includes(opt.value));
+                });
+                 Array.from(lowStockUnit.options).forEach(opt => {
+                    opt.hidden = (category === 'Ink' && opt.value === 'units');
+                });
+                 if(category !== 'Ink') {
+                    quantityUnit.value = 'pieces';
+                    lowStockUnit.value = 'units';
+                 }
+            }
+
+            categorySelect.addEventListener('change', handleCategoryChange);
+            document.getElementById('add-item-btn').addEventListener('click', () => { form.reset(); document.getElementById('item-id').value = ''; modalTitle.textContent = 'Add New Item'; handleCategoryChange(); toggleModal(true); });
+            document.getElementById('cancel-btn').addEventListener('click', () => toggleModal(false));
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    fetchInventory(btn.dataset.category);
+                });
+            });
+
+            async function fetchInventory(category = 'All') {
+                tableContainer.innerHTML = '<p class="text-gray-400">Loading inventory...</p>';
+                try {
+                    const response = await fetch(`inventory_api.php?action=get_items&category=${category}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: token })
+                    });
+                    if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Server error'); }
+                    const result = await response.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+                    renderTable(result.data);
+                } catch (error) {
+                    tableContainer.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                }
+            }
+
+            function renderTable(items) {
+                if (items.length === 0) { tableContainer.innerHTML = '<p class="text-gray-500">No inventory items found.</p>'; return; }
+                let tableHtml = `<table class="w-full text-sm text-left text-gray-400"><thead class="text-xs bg-gray-800 text-gray-300 uppercase"><tr><th class="px-4 py-3">Item</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Quantity</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Actions</th></tr></thead><tbody>`;
+                items.forEach(item => {
+                    const isLow = item.low_stock_unit === 'percent' ? (item.quantity / (item.low_stock_threshold / 100)) <= 1 : parseFloat(item.quantity) <= parseFloat(item.low_stock_threshold);
+                    tableHtml += `<tr class="border-b border-gray-700"><td class="px-4 py-3 font-medium text-white">${item.item_name}</td><td class="px-4 py-3">${item.category}</td><td class="px-4 py-3">${item.quantity} ${item.quantity_unit || ''}</td><td class="px-4 py-3"><span class="${isLow ? 'text-red-400' : 'text-green-400'}">${isLow ? 'Low Stock' : 'In Stock'}</span></td><td class="px-4 py-3">${item.supplier_name || 'N/A'}</td><td class="px-4 py-3"><button class="btn btn-secondary text-xs px-2 py-1">Edit</button></td></tr>`;
+                });
+                tableHtml += '</tbody></table>';
+                tableContainer.innerHTML = tableHtml;
+            }
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                data.token = token;
+                 try {
+                    const response = await fetch('inventory_api.php?action=add_item', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+                    toggleModal(false);
+                    fetchInventory(document.querySelector('.filter-btn.active').dataset.category);
+                 } catch (error) {
+                    alert('Error saving item: ' + error.message);
+                 }
+            });
+
+            fetchInventory();
+        });
+    </script>
+</body>
+</html>

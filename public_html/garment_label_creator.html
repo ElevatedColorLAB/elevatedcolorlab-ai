@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Label Creator - ElevatedColorLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            border-radius: 12px;
+        }
+        .form-control {
+            background: rgba(51, 65, 85, 0.6);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            color: white;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(71, 85, 105, 0.6);
+            color: white;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(100, 116, 139, 0.8);
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .toolbar-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(51, 65, 85, 0.6);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toolbar-button:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+        .toolbar-button.active {
+            background: rgba(59, 130, 246, 0.5);
+        }
+        .grid-guide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+        }
+        .template-card {
+            border: 2px solid transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .template-card:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6;
+        }
+        .template-card.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        #main-canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #main-canvas-wrapper {
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            background: white;
+            border-radius: 8px;
+        }
+        .loader {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 4px solid #374151;
+            border-top-color: #2563eb;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <!-- Top Navigation -->
+    <nav class="glass-panel m-4">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                            <i class="fas fa-tags text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-white">ElevatedColorLab</h1>
+                            <p class="text-sm text-blue-300">Professional Label Creator</p>
+                        </div>
+                    </div>
+                    <div class="hidden md:flex items-center gap-1 ml-6">
+                        <button class="tab-button active" data-tab="design">Design</button>
+                        <button class="tab-button" data-tab="templates">Templates</button>
+                        <button class="tab-button" data-tab="export">Export</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button class="btn btn-secondary" id="save-project-btn">
+                        <i class="fas fa-save"></i>
+                        Save Project
+                    </button>
+                    <button class="btn btn-primary" id="generate-all-btn">
+                        <i class="fas fa-file-export"></i>
+                        Generate All Labels
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="flex flex-1 h-[calc(100vh-120px)] mx-4 mb-4 gap-4">
+        <!-- Left Sidebar - Controls -->
+        <div class="w-80 flex flex-col gap-4">
+            <!-- Tab Content -->
+            <div class="glass-panel flex-1 overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-slate-700">
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <button class="tab-button active" data-tab="content">Content</button>
+                        <button class="tab-button" data-tab="design">Design</button>
+                        <button class="tab-button" data-tab="layout">Layout</button>
+                        <button class="tab-button" data-tab="sizes">Sizes</button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 space-y-6" id="tab-content">
+                    <!-- Content Tab -->
+                    <div data-tab-content="content" class="space-y-6">
+                        <div>
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                <i class="fas fa-image text-blue-400"></i>
+                                Logo & Branding
+                            </h3>
+                            <input type="file" id="logo-upload" accept="image/*" class="form-control mb-3">
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <button class="btn btn-secondary" id="remove-bg-btn">
+                                    <i class="fas fa-magic"></i>
+                                    Remove BG
+                                </button>
+                                <button class="btn btn-secondary" id="vectorize-btn">
+                                    <i class="fas fa-vector-square"></i>
+                                    Vectorize
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                <i class="fas fa-font text-blue-400"></i>
+                                Text Content
+                            </h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Fabric Content</label>
+                                    <select id="fabric-content" class="form-control">
+                                        <option>100% Cotton</option>
+                                        <option>50/50 Cotton/Polyester</option>
+                                        <option>65/35 Polyester/Cotton</option>
+                                        <option>100% Polyester</option>
+                                        <option>Tri-Blend (50/25/25)</option>
+                                        <option>Bamboo/Cotton Blend</option>
+                                        <option>Organic Cotton</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Country of Origin</label>
+                                    <input type="text" id="country-origin" value="Made in USA" class="form-control">
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Care Instructions</label>
+                                    <select id="care-format" class="form-control mb-2">
+                                        <option value="icons">Icons Only</option>
+                                        <option value="text">Text Only</option>
+                                        <option value="both">Icons + Text</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                <i class="fas fa-expand-alt text-blue-400"></i>
+                                Size Information
+                            </h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Size Format</label>
+                                    <select id="size-format" class="form-control">
+                                        <option value="word">Word (SMALL)</option>
+                                        <option value="letter">Letter (S)</option>
+                                        <option value="numeric">Numeric (6)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Size Range</label>
+                                    <input type="text" id="size-range" value="XS, S, M, L, XL, 2XL" class="form-control">
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Preview Size</label>
+                                    <select id="preview-size-select" class="form-control">
+                                        <option value="M">Medium (M)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Design Tab -->
+                    <div data-tab-content="design" class="space-y-6 hidden">
+                        <div>
+                            <h3 class="font-semibold mb-3">Typography</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Font Family</label>
+                                    <select id="font-family" class="form-control">
+                                        <option value="Arial">Arial</option>
+                                        <option value="Helvetica">Helvetica</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Times New Roman">Times New Roman</option>
+                                        <option value="Courier New">Courier New</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-sm text-slate-400 mb-1 block">Text Color</label>
+                                        <input type="color" id="text-color" value="#000000" class="w-full h-10 cursor-pointer">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm text-slate-400 mb-1 block">Font Size</label>
+                                        <select id="font-size" class="form-control">
+                                            <option value="12">12px</option>
+                                            <option value="14">14px</option>
+                                            <option value="16">16px</option>
+                                            <option value="18">18px</option>
+                                            <option value="24">24px</option>
+                                            <option value="32">32px</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3">Care Icons</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="group-icons" class="rounded" checked>
+                                    <span class="text-sm">Group icons together</span>
+                                </label>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <button class="btn btn-secondary btn-sm" id="select-icons-btn">
+                                        <i class="fas fa-icons"></i>
+                                        Select Icons
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" id="align-icons-btn">
+                                        <i class="fas fa-align-center"></i>
+                                        Align Center
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3">Effects</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="text-outline" class="rounded">
+                                    <span class="text-sm">Text Outline</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="drop-shadow" class="rounded">
+                                    <span class="text-sm">Drop Shadow</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Tab -->
+                    <div data-tab-content="layout" class="space-y-6 hidden">
+                        <div>
+                            <h3 class="font-semibold mb-3">Label Dimensions</h3>
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Width (inches)</label>
+                                    <input type="number" id="label-width" value="2.5" step="0.1" class="form-control">
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-400 mb-1 block">Height (inches)</label>
+                                    <input type="number" id="label-height" value="2.0" step="0.1" class="form-control">
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm text-slate-400 mb-1 block">Preset Sizes</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button class="size-preset btn btn-secondary" data-size="2.5x2">2.5" x 2"</button>
+                                    <button class="size-preset btn btn-secondary active" data-size="3x2">3" x 2"</button>
+                                    <button class="size-preset btn btn-secondary" data-size="4x3">4" x 3"</button>
+                                    <button class="size-preset btn btn-secondary" data-size="2x1.5">2" x 1.5"</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3">Orientation</h3>
+                            <div class="flex gap-3">
+                                <button class="flex-1 btn btn-secondary" id="vertical-btn">
+                                    <i class="fas fa-arrows-alt-v"></i>
+                                    Vertical
+                                </button>
+                                <button class="flex-1 btn btn-secondary active" id="horizontal-btn">
+                                    <i class="fas fa-arrows-alt-h"></i>
+                                    Horizontal
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3">Alignment Guides</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="show-grid" class="rounded" checked>
+                                    <span class="text-sm">Show Grid</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="snap-to-grid" class="rounded">
+                                    <span class="text-sm">Snap to Grid</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sizes Tab -->
+                    <div data-tab-content="sizes" class="space-y-6 hidden">
+                        <div>
+                            <h3 class="font-semibold mb-3">Size Management</h3>
+                            <div id="size-list" class="space-y-2">
+                                <!-- Size list will be populated here -->
+                            </div>
+                            <button class="btn btn-secondary w-full mt-3" id="add-custom-size">
+                                <i class="fas fa-plus"></i>
+                                Add Custom Size
+                            </button>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold mb-3">Batch Generation</h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="generate-all" class="rounded" checked>
+                                    <span class="text-sm">Generate all sizes</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="include-blank" class="rounded">
+                                    <span class="text-sm">Include blank template</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="crop-marks" class="rounded">
+                                    <span class="text-sm">Add crop marks</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actual Size Preview -->
+            <div class="glass-panel p-4">
+                <h3 class="font-semibold mb-3 flex items-center justify-between">
+                    <span>Actual Size Preview</span>
+                    <span class="text-sm text-blue-400" id="actual-size-display">3" × 2"</span>
+                </h3>
+                <div class="relative border-2 border-slate-600 rounded-lg bg-white" id="actual-size-container">
+                    <div class="grid-guide" id="actual-size-guide"></div>
+                    <canvas id="actual-size-canvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="flex-1 flex flex-col gap-4 min-w-0">
+            <!-- Main Tab Navigation -->
+            <div class="glass-panel p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-2">
+                            <button class="toolbar-button active" id="select-tool" title="Select Tool (V)">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </button>
+                            <button class="toolbar-button" id="text-tool" title="Add Text (T)">
+                                <i class="fas fa-font"></i>
+                            </button>
+                            <div class="w-px h-6 bg-slate-600 mx-1"></div>
+                            <button class="toolbar-button" id="align-left" title="Align Left">
+                                <i class="fas fa-align-left"></i>
+                            </button>
+                            <button class="toolbar-button" id="align-center" title="Align Center">
+                                <i class="fas fa-align-center"></i>
+                            </button>
+                            <button class="toolbar-button" id="align-right" title="Align Right">
+                                <i class="fas fa-align-right"></i>
+                            </button>
+                            <div class="w-px h-6 bg-slate-600 mx-1"></div>
+                            <button class="toolbar-button" id="group-objects" title="Group Objects (G)">
+                                <i class="fas fa-object-group"></i>
+                            </button>
+                            <button class="toolbar-button" id="ungroup-objects" title="Ungroup Objects">
+                                <i class="fas fa-object-ungroup"></i>
+                            </button>
+                            <button class="toolbar-button" id="delete-object" title="Delete (Del)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-sm text-slate-400">
+                            Zoom: <span id="zoom-level">100%</span>
+                        </div>
+                        <input type="range" id="zoom-slider" min="10" max="400" value="100" class="w-32">
+                        <button class="btn btn-secondary btn-icon" id="zoom-fit">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="btn btn-primary" id="auto-arrange-btn">
+                            <i class="fas fa-magic"></i>
+                            Auto Arrange
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Canvas Container -->
+            <div class="glass-panel flex-1 relative overflow-hidden p-0">
+                <div id="main-canvas-container">
+                    <div id="main-canvas-wrapper">
+                        <div class="grid-guide" id="main-guide"></div>
+                        <canvas id="main-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templates-modal" class="modal-overlay">
+        <div class="glass-panel p-6 max-w-5xl w-full max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Choose a Template</h2>
+                <button onclick="document.getElementById('templates-modal').style.display = 'none'" class="btn btn-icon">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-6 mb-6">
+                <!-- Template 1: Classic Professional -->
+                <div class="template-card" data-template="classic">
+                    <div class="h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-crown text-white"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Classic Professional</h3>
+                            <p class="text-sm text-gray-300 mt-1">Clean, centered layout</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">3" × 2"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="classic">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template 2: Modern Minimal -->
+                <div class="template-card" data-template="modern">
+                    <div class="h-40 bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-white rounded-lg mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-brush text-blue-600"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Modern Minimal</h3>
+                            <p class="text-sm text-blue-200 mt-1">Clean lines, ample whitespace</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">2.5" × 2"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="modern">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template 3: Bold & Industrial -->
+                <div class="template-card" data-template="bold">
+                    <div class="h-40 bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-yellow-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-industry text-black"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Bold Industrial</h3>
+                            <p class="text-sm text-gray-300 mt-1">Strong typography, bold icons</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">4" × 3"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="bold">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template 4: Elegant Luxury -->
+                <div class="template-card" data-template="luxury">
+                    <div class="h-40 bg-gradient-to-br from-purple-900 to-pink-700 flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-gold-400 rounded-full mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-gem text-purple-900"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Elegant Luxury</h3>
+                            <p class="text-sm text-purple-200 mt-1">Premium style with decorative elements</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">3.5" × 2.5"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="luxury">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template 5: Eco-Friendly -->
+                <div class="template-card" data-template="eco">
+                    <div class="h-40 bg-gradient-to-br from-green-800 to-emerald-700 flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-white rounded-full mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-leaf text-green-600"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Eco-Friendly</h3>
+                            <p class="text-sm text-green-200 mt-1">Nature-inspired, sustainable design</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">2.5" × 1.5"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="eco">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template 6: Sporty -->
+                <div class="template-card" data-template="sporty">
+                    <div class="h-40 bg-gradient-to-br from-red-800 to-orange-700 flex items-center justify-center">
+                        <div class="text-center p-4">
+                            <div class="w-12 h-12 bg-white rounded-lg mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-running text-red-600"></i>
+                            </div>
+                            <h3 class="font-bold text-white">Sporty Dynamic</h3>
+                            <p class="text-sm text-red-200 mt-1">Energetic, activewear style</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">3" × 2"</span>
+                            <button class="btn btn-sm btn-primary use-template" data-template="sporty">
+                                Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-700">
+                <div class="flex justify-between items-center">
+                    <p class="text-sm text-slate-400">Select a template to apply to your design</p>
+                    <button class="btn btn-secondary" onclick="document.getElementById('templates-modal').style.display = 'none'">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generation Modal -->
+    <div id="generate-modal" class="modal-overlay">
+        <div class="glass-panel p-6 max-w-6xl w-full max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Generated Labels</h2>
+                <button onclick="document.getElementById('generate-modal').style.display = 'none'" class="btn btn-icon">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="print-output" class="flex-1 overflow-y-auto p-4 bg-slate-900 rounded-lg grid grid-cols-4 gap-4"></div>
+            
+            <div class="mt-6 pt-6 border-t border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-slate-400">Total: <span id="label-count">0</span> labels generated</p>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn btn-secondary" id="print-directly-btn">
+                        <i class="fas fa-print"></i>
+                        Print
+                    </button>
+                    <button id="download-btn" class="btn btn-primary">
+                        <i class="fas fa-download"></i>
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const { jsPDF } = window.jspdf;
+        const DPI = 96;
+        const ACTUAL_DPI = 150; // For actual size preview
+
+        // DOM Elements
+        const mainCanvasEl = document.getElementById('main-canvas');
+        const actualCanvasEl = document.getElementById('actual-size-canvas');
+        const mainCanvasContainer = document.getElementById('main-canvas-container');
+        const mainCanvasWrapper = document.getElementById('main-canvas-wrapper');
+        const generateModal = document.getElementById('generate-modal');
+        const generateAllBtn = document.getElementById('generate-all-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const printOutput = document.getElementById('print-output');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomLevel = document.getElementById('zoom-level');
+        const actualSizeDisplay = document.getElementById('actual-size-display');
+        const actualSizeContainer = document.getElementById('actual-size-container');
+        const templatesModal = document.getElementById('templates-modal');
+        const mainGuide = document.getElementById('main-guide');
+        const actualSizeGuide = document.getElementById('actual-size-guide');
+
+        // Initialize Canvases
+        const mainCanvas = new fabric.Canvas('main-canvas', {
+            backgroundColor: '#ffffff',
+            selection: true,
+            preserveObjectStacking: true,
+            renderOnAddRemove: true,
+            controlsAboveOverlay: true
+        });
+
+        const actualCanvas = new fabric.Canvas('actual-size-canvas', {
+            backgroundColor: '#ffffff',
+            selection: false,
+            interactive: false,
+            renderOnAddRemove: true
+        });
+
+        // State Management
+        let currentTool = 'select';
+        let currentColor = '#000000';
+        let isGridVisible = true;
+        let isSnapToGrid = false;
+        let gridSize = 20;
+        let careIconGroup = null;
+        let currentTemplate = 'classic';
+
+        // Initialize Label with default template
+        function initializeLabel() {
+            mainCanvas.clear();
+            actualCanvas.clear();
+            updateCanvasDimensions();
+            loadTemplate(currentTemplate);
+        }
+
+        // Load Template
+        function loadTemplate(templateName) {
+            currentTemplate = templateName;
+            
+            // Clear existing content
+            mainCanvas.clear();
+            
+            // Common icon paths
+            const iconPaths = [
+                'M21.99 8.01c0-1.65-1.34-3-2.99-3H5c-1.65 0-3 1.35-3 3.01v10.98c0 1.65 1.35 3 3 3h14c1.65 0 3-1.35 3-3V8.01zM8.5 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3.5 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3.5 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM21 6H3V4h18v2z',
+                'M12 2L2 22h20L12 2zm-1 15v-4h2v4h-2zm0-6V7h2v4h-2z',
+                'M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z',
+                'M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h2v2h2v-2h10v2h2v-2h2c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-2 8H5V8h14v6z'
+            ];
+
+            // Template configurations
+            const templates = {
+                classic: {
+                    width: 3,
+                    height: 2,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'MEDIUM',
+                            fontFamily: 'Arial',
+                            fontSize: 42,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 50,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: '100% Cotton',
+                            fontFamily: 'Arial',
+                            fontSize: 20,
+                            left: 'center',
+                            top: 100,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Made in USA',
+                            fontFamily: 'Arial',
+                            fontSize: 16,
+                            left: 'center',
+                            top: 130,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths,
+                            left: 'center',
+                            top: 170,
+                            fill: '#000000',
+                            spacing: 30
+                        }
+                    ]
+                },
+                modern: {
+                    width: 2.5,
+                    height: 2,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'M',
+                            fontFamily: 'Helvetica',
+                            fontSize: 60,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 50,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Premium Cotton',
+                            fontFamily: 'Helvetica',
+                            fontSize: 18,
+                            left: 'center',
+                            top: 100,
+                            fill: '#666666'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths.slice(0, 3),
+                            left: 'center',
+                            top: 140,
+                            fill: '#000000',
+                            spacing: 25
+                        }
+                    ]
+                },
+                bold: {
+                    width: 4,
+                    height: 3,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'LARGE',
+                            fontFamily: 'Arial Black',
+                            fontSize: 72,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 80,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: 'INDUSTRIAL STRENGTH',
+                            fontFamily: 'Arial',
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 150,
+                            fill: '#333333'
+                        },
+                        {
+                            type: 'text',
+                            text: 'MADE IN USA • HEAVY DUTY',
+                            fontFamily: 'Courier New',
+                            fontSize: 16,
+                            left: 'center',
+                            top: 185,
+                            fill: '#666666'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths,
+                            left: 'center',
+                            top: 220,
+                            fill: '#000000',
+                            spacing: 40,
+                            scale: 1.2
+                        }
+                    ]
+                },
+                luxury: {
+                    width: 3.5,
+                    height: 2.5,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'LUXURY',
+                            fontFamily: 'Georgia',
+                            fontSize: 48,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 60,
+                            fill: '#000000',
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                        },
+                        {
+                            type: 'text',
+                            text: '100% Silk',
+                            fontFamily: 'Georgia',
+                            fontSize: 24,
+                            fontStyle: 'italic',
+                            left: 'center',
+                            top: 110,
+                            fill: '#444444'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Handcrafted in Italy',
+                            fontFamily: 'Georgia',
+                            fontSize: 18,
+                            left: 'center',
+                            top: 140,
+                            fill: '#666666'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths,
+                            left: 'center',
+                            top: 180,
+                            fill: '#000000',
+                            spacing: 35
+                        }
+                    ]
+                },
+                eco: {
+                    width: 2.5,
+                    height: 1.5,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'ECO',
+                            fontFamily: 'Arial',
+                            fontSize: 40,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 40,
+                            fill: '#16a34a'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Organic Bamboo',
+                            fontFamily: 'Arial',
+                            fontSize: 16,
+                            left: 'center',
+                            top: 75,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Sustainable',
+                            fontFamily: 'Arial',
+                            fontSize: 12,
+                            left: 'center',
+                            top: 95,
+                            fill: '#666666'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths.slice(0, 2),
+                            left: 'center',
+                            top: 115,
+                            fill: '#16a34a',
+                            spacing: 20
+                        }
+                    ]
+                },
+                sporty: {
+                    width: 3,
+                    height: 2,
+                    elements: [
+                        {
+                            type: 'text',
+                            text: 'XL',
+                            fontFamily: 'Impact',
+                            fontSize: 64,
+                            left: 'center',
+                            top: 50,
+                            fill: '#dc2626'
+                        },
+                        {
+                            type: 'text',
+                            text: 'PERFORMANCE FABRIC',
+                            fontFamily: 'Arial',
+                            fontSize: 18,
+                            fontWeight: 'bold',
+                            left: 'center',
+                            top: 105,
+                            fill: '#000000'
+                        },
+                        {
+                            type: 'text',
+                            text: 'Moisture Wicking • Quick Dry',
+                            fontFamily: 'Arial',
+                            fontSize: 14,
+                            left: 'center',
+                            top: 130,
+                            fill: '#666666'
+                        },
+                        {
+                            type: 'icons',
+                            icons: iconPaths,
+                            left: 'center',
+                            top: 160,
+                            fill: '#dc2626',
+                            spacing: 25
+                        }
+                    ]
+                }
+            };
+
+            const template = templates[templateName];
+            if (!template) return;
+
+            // Update dimensions
+            document.getElementById('label-width').value = template.width;
+            document.getElementById('label-height').value = template.height;
+            updateCanvasDimensions();
+
+            // Create elements
+            const elements = [];
+            template.elements.forEach(elementConfig => {
+                if (elementConfig.type === 'text') {
+                    const text = new fabric.Text(elementConfig.text, {
+                        fontFamily: elementConfig.fontFamily || 'Arial',
+                        fontSize: elementConfig.fontSize,
+                        fontWeight: elementConfig.fontWeight || 'normal',
+                        fontStyle: elementConfig.fontStyle || 'normal',
+                        fill: elementConfig.fill || '#000000',
+                        left: elementConfig.left === 'center' ? mainCanvas.width / 2 : elementConfig.left,
+                        top: elementConfig.top,
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: true,
+                        hasControls: true
+                    });
+                    
+                    if (elementConfig.textShadow) {
+                        text.setShadow(elementConfig.textShadow);
+                    }
+                    
+                    elements.push(text);
+                } else if (elementConfig.type === 'icons') {
+                    const icons = elementConfig.icons.map((path, index) => {
+                        const icon = new fabric.Path(path, {
+                            fill: elementConfig.fill || '#000000',
+                            left: (elementConfig.left === 'center' ? mainCanvas.width / 2 : elementConfig.left) + 
+                                  (index - (elementConfig.icons.length - 1) / 2) * (elementConfig.spacing || 30),
+                            top: elementConfig.top,
+                            scaleX: elementConfig.scale || 1,
+                            scaleY: elementConfig.scale || 1,
+                            selectable: true,
+                            hasControls: true,
+                            data: { type: 'care-icon' }
+                        });
+                        return icon;
+                    });
+
+                    // Group icons if checkbox is checked
+                    if (document.getElementById('group-icons')?.checked) {
+                        careIconGroup = new fabric.Group(icons, {
+                            left: elementConfig.left === 'center' ? mainCanvas.width / 2 : elementConfig.left,
+                            top: elementConfig.top,
+                            selectable: true,
+                            hasControls: true,
+                            data: { type: 'care-icon-group' }
+                        });
+                        mainCanvas.add(careIconGroup);
+                    } else {
+                        icons.forEach(icon => mainCanvas.add(icon));
+                    }
+                }
+            });
+
+            // Add text elements to canvas
+            elements.forEach(element => mainCanvas.add(element));
+            
+            // Set default size text to preview size
+            updateSizeText();
+            
+            mainCanvas.renderAll();
+            syncToActualCanvas();
+        }
+
+        // Update Canvas Dimensions and Layout
+        function updateCanvasDimensions() {
+            const width = parseFloat(document.getElementById('label-width').value) || 2.5;
+            const height = parseFloat(document.getElementById('label-height').value) || 2.0;
+            
+            // Update displays
+            actualSizeDisplay.textContent = `${width}" × ${height}"`;
+            
+            // Set main canvas dimensions
+            const mainWidth = width * DPI;
+            const mainHeight = height * DPI;
+            mainCanvas.setWidth(mainWidth);
+            mainCanvas.setHeight(mainHeight);
+            
+            // Set actual canvas dimensions
+            const actualWidth = width * ACTUAL_DPI;
+            const actualHeight = height * ACTUAL_DPI;
+            actualCanvas.setWidth(actualWidth);
+            actualCanvas.setHeight(actualHeight);
+            
+            // Update container sizes
+            actualSizeContainer.style.width = `${actualWidth}px`;
+            actualSizeContainer.style.height = `${actualHeight}px`;
+            
+            // Update main canvas wrapper size
+            mainCanvasWrapper.style.width = `${mainWidth}px`;
+            mainCanvasWrapper.style.height = `${mainHeight}px`;
+            
+            // Update grid guides
+            updateGridGuides();
+            
+            // Fit canvas to view
+            fitCanvasToView();
+            
+            // Sync to actual canvas
+            syncToActualCanvas();
+            
+            // Update size select options
+            updateSizeSelect();
+        }
+
+        // Fit Canvas to View
+        function fitCanvasToView() {
+            const container = mainCanvasContainer;
+            const wrapper = mainCanvasWrapper;
+            
+            if (!container || !wrapper) return;
+            
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const wrapperWidth = wrapper.clientWidth;
+            const wrapperHeight = wrapper.clientHeight;
+            
+            // Calculate scale to fit container
+            const scaleX = containerWidth / wrapperWidth;
+            const scaleY = containerHeight / wrapperHeight;
+            const scale = Math.min(scaleX, scaleY, 1) * 0.9; // 90% of available space
+            
+            // Apply zoom
+            mainCanvas.setZoom(scale);
+            mainCanvas.calcOffset();
+            
+            // Update zoom controls
+            const zoomPercent = Math.round(scale * 100);
+            zoomSlider.value = zoomPercent;
+            zoomLevel.textContent = `${zoomPercent}%`;
+            
+            // Center the wrapper
+            const offsetX = (containerWidth - (wrapperWidth * scale)) / 2;
+            const offsetY = (containerHeight - (wrapperHeight * scale)) / 2;
+            
+            wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+            wrapper.style.transformOrigin = 'top left';
+        }
+
+        // Sync Main Canvas to Actual Size Canvas
+        function syncToActualCanvas() {
+            actualCanvas.clear();
+            
+            // Clone all objects from main canvas
+            const objects = mainCanvas.getObjects();
+            objects.forEach(obj => {
+                const objCopy = fabric.util.object.clone(obj);
+                
+                // Scale for actual size preview
+                const scaleFactor = ACTUAL_DPI / DPI;
+                objCopy.scaleX *= scaleFactor;
+                objCopy.scaleY *= scaleFactor;
+                objCopy.left *= scaleFactor;
+                objCopy.top *= scaleFactor;
+                
+                actualCanvas.add(objCopy);
+            });
+            
+            actualCanvas.renderAll();
+        }
+
+        // Update Grid Guides
+        function updateGridGuides() {
+            if (isGridVisible) {
+                const gridSizePx = gridSize;
+                const pattern = `
+                    linear-gradient(90deg, rgba(59, 130, 246, 0.2) 1px, transparent 1px),
+                    linear-gradient(0deg, rgba(59, 130, 246, 0.2) 1px, transparent 1px)
+                `;
+                mainGuide.style.backgroundImage = pattern;
+                mainGuide.style.backgroundSize = `${gridSizePx}px ${gridSizePx}px`;
+                actualSizeGuide.style.backgroundImage = pattern;
+                actualSizeGuide.style.backgroundSize = `${gridSizePx}px ${gridSizePx}px`;
+            } else {
+                mainGuide.style.backgroundImage = 'none';
+                actualSizeGuide.style.backgroundImage = 'none';
+            }
+        }
+
+        // Update Size Text
+        function updateSizeText() {
+            const previewSize = document.getElementById('preview-size-select').value;
+            const sizeFormat = document.getElementById('size-format').value;
+            const sizeText = formatSize(previewSize, sizeFormat);
+            
+            const sizeObjects = mainCanvas.getObjects().filter(obj => 
+                obj.text && (obj.text.includes('SIZE') || obj.text.includes('MEDIUM') || 
+                obj.text.includes('SMALL') || obj.text.includes('LARGE') || 
+                obj.text === 'M' || obj.text === 'S' || obj.text === 'L' || obj.text === 'XL'));
+            
+            if (sizeObjects.length > 0) {
+                sizeObjects[0].set('text', sizeText);
+                mainCanvas.renderAll();
+                syncToActualCanvas();
+            }
+        }
+
+        // Format Size
+        function formatSize(size, format) {
+            const sizeMap = {
+                'XS': 'X-SMALL',
+                'S': 'SMALL',
+                'M': 'MEDIUM',
+                'L': 'LARGE',
+                'XL': 'X-LARGE',
+                '2XL': '2X-LARGE',
+                '3XL': '3X-LARGE'
+            };
+
+            switch (format) {
+                case 'word': return sizeMap[size] || size;
+                case 'letter': return size.charAt(0);
+                case 'numeric': 
+                    const numMap = { 'XS': '0', 'S': '2', 'M': '6', 'L': '8', 'XL': '10', '2XL': '12', '3XL': '14' };
+                    return numMap[size] || size;
+                default: return size.toUpperCase();
+            }
+        }
+
+        // Update Size Select Options
+        function updateSizeSelect() {
+            const sizeRange = document.getElementById('size-range').value;
+            const sizes = sizeRange.split(',').map(s => s.trim()).filter(s => s);
+            const select = document.getElementById('preview-size-select');
+            
+            select.innerHTML = '';
+            sizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size;
+                option.textContent = size;
+                if (size === 'M') option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        // Group Care Icons
+        function groupCareIcons() {
+            const icons = mainCanvas.getObjects().filter(obj => 
+                obj.data?.type === 'care-icon' && !obj.group);
+            
+            if (icons.length > 0 && careIconGroup) {
+                mainCanvas.remove(careIconGroup);
+            }
+            
+            if (icons.length > 1) {
+                careIconGroup = new fabric.Group(icons, {
+                    selectable: true,
+                    hasControls: true,
+                    data: { type: 'care-icon-group' }
+                });
+                mainCanvas.add(careIconGroup);
+                mainCanvas.renderAll();
+                syncToActualCanvas();
+            }
+        }
+
+        // Ungroup Care Icons
+        function ungroupCareIcons() {
+            if (careIconGroup) {
+                const objects = careIconGroup.getObjects();
+                mainCanvas.remove(careIconGroup);
+                careIconGroup = null;
+                
+                objects.forEach(obj => {
+                    obj.set({ selectable: true, hasControls: true });
+                    mainCanvas.add(obj);
+                });
+                
+                mainCanvas.renderAll();
+                syncToActualCanvas();
+            }
+        }
+
+        // Event Handlers
+        function setupEventListeners() {
+            // Tab Navigation
+            document.querySelectorAll('[data-tab]').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (button.dataset.tab === 'templates') {
+                        document.getElementById('templates-modal').style.display = 'flex';
+                        return;
+                    }
+                    
+                    document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+                    button.classList.add('active');
+                });
+            });
+
+            // Template Selection
+            document.querySelectorAll('.use-template').forEach(button => {
+                button.addEventListener('click', () => {
+                    const template = button.dataset.template;
+                    loadTemplate(template);
+                    document.getElementById('templates-modal').style.display = 'none';
+                    
+                    // Update active template card
+                    document.querySelectorAll('.template-card').forEach(card => {
+                        card.classList.remove('active');
+                        if (card.dataset.template === template) {
+                            card.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            // Dimension Controls
+            document.getElementById('label-width').addEventListener('input', updateCanvasDimensions);
+            document.getElementById('label-height').addEventListener('input', updateCanvasDimensions);
+            
+            // Size Presets
+            document.querySelectorAll('.size-preset').forEach(preset => {
+                preset.addEventListener('click', () => {
+                    document.querySelectorAll('.size-preset').forEach(p => p.classList.remove('active'));
+                    preset.classList.add('active');
+                    
+                    const [width, height] = preset.dataset.size.split('x').map(Number);
+                    document.getElementById('label-width').value = width;
+                    document.getElementById('label-height').value = height;
+                    updateCanvasDimensions();
+                });
+            });
+
+            // Zoom Controls
+            zoomSlider.addEventListener('input', () => {
+                const scale = parseInt(zoomSlider.value) / 100;
+                mainCanvas.setZoom(scale);
+                zoomLevel.textContent = `${zoomSlider.value}%`;
+                mainCanvas.calcOffset();
+                fitCanvasToView();
+            });
+
+            document.getElementById('zoom-fit').addEventListener('click', fitCanvasToView);
+
+            // Tool Selection
+            document.getElementById('select-tool').addEventListener('click', () => {
+                setTool('select');
+                mainCanvas.selection = true;
+            });
+
+            document.getElementById('text-tool').addEventListener('click', () => {
+                setTool('text');
+                const text = new fabric.IText('New Text', {
+                    left: mainCanvas.width / 2,
+                    top: mainCanvas.height / 2,
+                    fontSize: 24,
+                    fill: currentColor,
+                    selectable: true,
+                    originX: 'center',
+                    originY: 'center'
+                });
+                mainCanvas.add(text);
+                mainCanvas.setActiveObject(text);
+                mainCanvas.renderAll();
+                syncToActualCanvas();
+            });
+
+            // Group/Ungroup
+            document.getElementById('group-objects').addEventListener('click', groupCareIcons);
+            document.getElementById('ungroup-objects').addEventListener('click', ungroupCareIcons);
+
+            // Alignment Tools
+            document.getElementById('align-center').addEventListener('click', () => {
+                const activeObject = mainCanvas.getActiveObject();
+                if (activeObject) {
+                    activeObject.set('left', mainCanvas.width / 2);
+                    activeObject.set('originX', 'center');
+                    mainCanvas.renderAll();
+                    syncToActualCanvas();
+                }
+            });
+
+            // Delete Object
+            document.getElementById('delete-object').addEventListener('click', () => {
+                const activeObject = mainCanvas.getActiveObject();
+                if (activeObject) {
+                    mainCanvas.remove(activeObject);
+                    mainCanvas.renderAll();
+                    syncToActualCanvas();
+                }
+            });
+
+            // Content Updates
+            document.getElementById('fabric-content').addEventListener('change', () => {
+                const fabricText = mainCanvas.getObjects().find(o => 
+                    o.text && (o.text.includes('Cotton') || o.text.includes('Polyester') || 
+                    o.text.includes('Fabric') || o.text.includes('Material')));
+                
+                if (fabricText) {
+                    fabricText.set('text', document.getElementById('fabric-content').value);
+                    mainCanvas.renderAll();
+                    syncToActualCanvas();
+                }
+            });
+
+            document.getElementById('country-origin').addEventListener('input', () => {
+                const originText = mainCanvas.getObjects().find(o => 
+                    o.text && (o.text.includes('Made in') || o.text.includes('USA') || 
+                    o.text.includes('Origin') || o.text.includes('Country')));
+                
+                if (originText) {
+                    originText.set('text', document.getElementById('country-origin').value);
+                    mainCanvas.renderAll();
+                    syncToActualCanvas();
+                }
+            });
+
+            // Size Format and Preview
+            document.getElementById('size-format').addEventListener('change', updateSizeText);
+            document.getElementById('preview-size-select').addEventListener('change', updateSizeText);
+            document.getElementById('size-range').addEventListener('input', updateSizeSelect);
+
+            // Logo Upload
+            document.getElementById('logo-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (f) => {
+                        fabric.Image.fromURL(f.target.result, (img) => {
+                            img.set({
+                                left: mainCanvas.width / 2,
+                                top: 30,
+                                originX: 'center',
+                                originY: 'center',
+                                scaleX: 0.3,
+                                scaleY: 0.3,
+                                selectable: true,
+                                data: { type: 'logo' }
+                            });
+                            mainCanvas.add(img);
+                            mainCanvas.moveTo(img, 0); // Send to back
+                            mainCanvas.renderAll();
+                            syncToActualCanvas();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Group Icons Checkbox
+            document.getElementById('group-icons')?.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    groupCareIcons();
+                } else {
+                    ungroupCareIcons();
+                }
+            });
+
+            // Generate All Labels
+            generateAllBtn.addEventListener('click', async () => {
+                generateModal.style.display = 'flex';
+                printOutput.innerHTML = `
+                    <div class="col-span-4 flex items-center justify-center h-64">
+                        <div class="text-center">
+                            <div class="loader mx-auto mb-4"></div>
+                            <p class="text-slate-400">Generating labels...</p>
+                        </div>
+                    </div>
+                `;
+
+                const sizes = document.getElementById('size-range').value.split(',').map(s => s.trim()).filter(s => s);
+                const sizeFormat = document.getElementById('size-format').value;
+                
+                let generatedHtml = '';
+                const labelWidth = parseFloat(document.getElementById('label-width').value);
+                const labelHeight = parseFloat(document.getElementById('label-height').value);
+
+                // Generate each size
+                for (const size of sizes) {
+                    // Create temporary canvas
+                    const tempCanvas = new fabric.Canvas(null, {
+                        width: labelWidth * DPI,
+                        height: labelHeight * DPI,
+                        backgroundColor: '#ffffff'
+                    });
+
+                    // Clone objects from main canvas
+                    const objects = mainCanvas.getObjects();
+                    const objectData = objects.map(obj => {
+                        const objData = obj.toObject(['data']);
+                        
+                        // Update size text if it's a size element
+                        if (objData.text) {
+                            const currentText = obj.text;
+                            const sizePatterns = ['MEDIUM', 'SMALL', 'LARGE', 'XL', 'XS', 'S', 'M', 'L', 'X-LARGE', 'X-SMALL'];
+                            if (sizePatterns.some(pattern => currentText.includes(pattern))) {
+                                objData.text = formatSize(size, sizeFormat);
+                            }
+                        }
+                        
+                        return objData;
+                    });
+
+                    // Load objects into temp canvas
+                    tempCanvas.loadFromJSON({ objects: objectData }, () => {
+                        tempCanvas.renderAll();
+                        
+                        // Generate image
+                        const dataUrl = tempCanvas.toDataURL({ format: 'png', quality: 1.0 });
+                        generatedHtml += `
+                            <div class="label-preview border border-slate-700 rounded-lg p-3 bg-white">
+                                <img src="${dataUrl}" class="w-full h-auto" alt="Label ${size}">
+                                <div class="mt-2 text-center">
+                                    <span class="text-sm font-semibold">${size}</span>
+                                    <p class="text-xs text-slate-500">${labelWidth}" × ${labelHeight}"</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        tempCanvas.dispose();
+                    });
+                }
+
+                // Update UI after a short delay to allow canvas rendering
+                setTimeout(() => {
+                    printOutput.innerHTML = generatedHtml;
+                    document.getElementById('label-count').textContent = sizes.length;
+                }, 100);
+            });
+
+            // Download PDF
+            downloadBtn.addEventListener('click', () => {
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'in',
+                    format: 'letter'
+                });
+
+                const labels = printOutput.querySelectorAll('.label-preview img');
+                const labelWidth = parseFloat(document.getElementById('label-width').value);
+                const labelHeight = parseFloat(document.getElementById('label-height').value);
+                
+                const margin = 0.5;
+                const pageWidth = 8.5;
+                const pageHeight = 11;
+                
+                let x = margin;
+                let y = margin;
+                let page = 0;
+
+                labels.forEach((img, index) => {
+                    if (y + labelHeight > pageHeight - margin) {
+                        y = margin;
+                        x += labelWidth + 0.1;
+                    }
+                    if (x + labelWidth > pageWidth - margin) {
+                        pdf.addPage();
+                        page++;
+                        x = margin;
+                        y = margin;
+                    }
+
+                    pdf.addImage(img.src, 'PNG', x, y, labelWidth, labelHeight);
+                    y += labelHeight + 0.1;
+                });
+
+                pdf.save('garment-labels.pdf');
+            });
+
+            // Grid Controls
+            document.getElementById('show-grid').addEventListener('change', (e) => {
+                isGridVisible = e.target.checked;
+                updateGridGuides();
+            });
+
+            // Auto Arrange
+            document.getElementById('auto-arrange-btn').addEventListener('click', () => {
+                // Center all text elements
+                const textObjects = mainCanvas.getObjects().filter(obj => obj.type === 'text' || obj.type === 'i-text');
+                textObjects.forEach((obj, index) => {
+                    const yPos = 50 + (index * 40);
+                    obj.set({
+                        left: mainCanvas.width / 2,
+                        top: yPos,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                });
+                
+                // Center care icons
+                const careIcons = mainCanvas.getObjects().filter(obj => obj.data?.type === 'care-icon' || obj.data?.type === 'care-icon-group');
+                if (careIcons.length > 0) {
+                    const lastIcon = careIcons[careIcons.length - 1];
+                    lastIcon.set({
+                        left: mainCanvas.width / 2,
+                        top: mainCanvas.height - 40,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                }
+                
+                mainCanvas.renderAll();
+                syncToActualCanvas();
+            });
+
+            // Window Resize
+            window.addEventListener('resize', () => {
+                fitCanvasToView();
+            });
+
+            // Prevent default drag behaviors
+            document.addEventListener('dragover', (e) => e.preventDefault());
+            document.addEventListener('drop', (e) => e.preventDefault());
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Delete key
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    const activeObject = mainCanvas.getActiveObject();
+                    if (activeObject) {
+                        mainCanvas.remove(activeObject);
+                        mainCanvas.renderAll();
+                        syncToActualCanvas();
+                    }
+                }
+                
+                // Group/ungroup with G key
+                if (e.key === 'g' && e.ctrlKey) {
+                    e.preventDefault();
+                    if (document.getElementById('group-icons')?.checked) {
+                        groupCareIcons();
+                    }
+                }
+                
+                // Select tool with V
+                if (e.key === 'v') {
+                    setTool('select');
+                }
+                
+                // Text tool with T
+                if (e.key === 't') {
+                    setTool('text');
+                }
+            });
+        }
+
+        // Helper Functions
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.toolbar-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`${tool}-tool`)?.classList.add('active');
+        }
+
+        // Initialize Application
+        function init() {
+            initializeLabel();
+            setupEventListeners();
+            fitCanvasToView();
+            
+            // Initialize size select
+            updateSizeSelect();
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
